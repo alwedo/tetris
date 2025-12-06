@@ -6,9 +6,9 @@ import (
 	"io"
 	"log"
 	"sync"
-	"tetris/pb"
 	"time"
 
+	"github.com/alwedo/tetris/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"

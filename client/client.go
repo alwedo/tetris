@@ -6,9 +6,9 @@ import (
 	"io"
 	"log/slog"
 	"sync"
-	"tetris/pb"
-	"tetris/tetris"
 
+	"github.com/alwedo/tetris/pb"
+	"github.com/alwedo/tetris/tetris"
 	"github.com/eiannone/keyboard"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"

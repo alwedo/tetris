@@ -6,9 +6,9 @@ import (
 	"os"
 	"sync"
 	"testing"
-	"tetris/tetris"
 	"time"
 
+	"github.com/alwedo/tetris/tetris"
 	"github.com/eiannone/keyboard"
 )
 

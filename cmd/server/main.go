@@ -4,9 +4,9 @@ import (
 	"fmt"
 	"log"
 	"net"
-	"tetris/pb"
-	"tetris/server"
 
+	"github.com/alwedo/tetris/pb"
+	"github.com/alwedo/tetris/server"
 	"google.golang.org/grpc"
 )
 
