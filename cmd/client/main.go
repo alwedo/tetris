@@ -8,7 +8,8 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"tetris/client"
+
+	"github.com/alwedo/tetris/client"
 )
 
 const VERSION = "v0.0.13"

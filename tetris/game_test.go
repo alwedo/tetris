@@ -2,8 +2,9 @@ package tetris_test
 
 import (
 	"testing"
-	"tetris/tetris"
 	"time"
+
+	"github.com/alwedo/tetris/tetris"
 )
 
 func TestGetUpdate(t *testing.T) {

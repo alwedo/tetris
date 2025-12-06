@@ -5,9 +5,9 @@ import (
 	"reflect"
 	"strings"
 	"testing"
-	"tetris/pb"
-	"tetris/tetris"
 
+	"github.com/alwedo/tetris/pb"
+	"github.com/alwedo/tetris/tetris"
 	approvals "github.com/approvals/go-approval-tests"
 	"google.golang.org/protobuf/proto"
 )

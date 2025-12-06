@@ -4,7 +4,7 @@ package tetris;
 
 import "google/protobuf/go_features.proto";
 
-option go_package = "github.com/Alvaroalonsobabbel/pb";
+option go_package = "github.com/alwedo/pb";
 option features.(pb.go).api_level = API_OPAQUE;
 
 service TetrisService {

@@ -7,9 +7,10 @@ import (
 	"log/slog"
 	"os"
 	"strings"
-	"tetris/pb"
-	"tetris/tetris"
 	"text/template"
+
+	"github.com/alwedo/tetris/pb"
+	"github.com/alwedo/tetris/tetris"
 )
 
 type msgSetter func(io.Writer)
