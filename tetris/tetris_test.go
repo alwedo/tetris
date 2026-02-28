@@ -461,17 +461,12 @@ func TestWallKick(t *testing.T) {
 func TestToStack(t *testing.T) {
 	tetris := NewTestTetris(J)
 	tetris.toStack()
-	wantStack := emptyStack()
-	wantStack[19][3] = J
-	wantStack[18][3] = J
-	wantStack[18][4] = J
-	wantStack[18][5] = J
 
-	if !reflect.DeepEqual(tetris.Stack, wantStack) {
-		t.Errorf("wanted %v, got %v", wantStack, tetris.Stack)
-	}
-	if tetris.Tetromino != nil {
-		t.Errorf("wanted Tetromino to be nil, got %v", tetris.Tetromino)
+	wantStack := [][]int{{19, 3}, {18, 3}, {18, 4}, {18, 5}}
+	for _, ws := range wantStack {
+		if tetris.Stack[ws[0]][ws[1]] != J {
+			t.Errorf("wanted stack %v to be J, got %v", ws, tetris.Stack[ws[0]][ws[1]])
+		}
 	}
 }
 

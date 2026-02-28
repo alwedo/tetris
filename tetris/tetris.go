@@ -36,8 +36,14 @@ type Tetris struct {
 }
 
 func newTetris() *Tetris {
+	// creates an empty 20x10 stack
+	s := make([][]Shape, 20)
+	for i := range s {
+		s[i] = make([]Shape, 10)
+	}
+
 	t := &Tetris{
-		Stack: emptyStack(),
+		Stack: s,
 		Level: 1,
 		bag:   newBag(),
 	}
@@ -46,11 +52,6 @@ func newTetris() *Tetris {
 }
 
 func (t *Tetris) action(a Action) {
-	if t.Tetromino == nil {
-		// between toStack() and next round's setTetromino() Tetromino is nil.
-		// we return here to avoid user commands to cause panic.
-		return
-	}
 	switch a {
 	case MoveLeft:
 		if !t.isCollision(-1, 0, t.Tetromino) {
@@ -189,7 +190,6 @@ func (t *Tetris) toStack() {
 			}
 		}
 	}
-	t.Tetromino = nil // WHY do I set the tetromino to nil here?
 }
 
 func (t *Tetris) setLevel() {
@@ -275,14 +275,6 @@ func (b *bag) draw() *Tetromino {
 	b.firstDraw = false
 	b.bag = append(b.bag[:i], b.bag[i+1:]...)
 	return t
-}
-
-func emptyStack() [][]Shape {
-	e := make([][]Shape, 20)
-	for i := range e {
-		e[i] = make([]Shape, 10)
-	}
-	return e
 }
 
 var wallKickMap = map[string]map[string][][]int{
