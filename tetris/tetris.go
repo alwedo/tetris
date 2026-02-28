@@ -254,10 +254,7 @@ type bag struct {
 }
 
 func newBag() *bag {
-	return &bag{
-		firstDraw: true,
-		bag:       newTetrominoList(),
-	}
+	return &bag{firstDraw: true}
 }
 
 func (b *bag) draw() *Tetromino {
@@ -265,7 +262,9 @@ func (b *bag) draw() *Tetromino {
 	// first piece is always I, J, L, or T
 	// new bag is generated after last piece is drawn
 	if len(b.bag) == 0 {
-		b.bag = newTetrominoList()
+		for _, t := range shapeMap {
+			b.bag = append(b.bag, t())
+		}
 	}
 	firstDrawList := []Shape{I, T, J, L}
 	i := rand.Intn(len(b.bag)) //nolint: gosec
@@ -276,14 +275,6 @@ func (b *bag) draw() *Tetromino {
 	b.firstDraw = false
 	b.bag = append(b.bag[:i], b.bag[i+1:]...)
 	return t
-}
-
-func newTetrominoList() []*Tetromino {
-	var b []*Tetromino
-	for _, t := range shapeMap {
-		b = append(b, t())
-	}
-	return b
 }
 
 func emptyStack() [][]Shape {

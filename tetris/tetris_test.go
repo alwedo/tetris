@@ -490,9 +490,6 @@ func TestRandomBag(t *testing.T) {
 	t.Run("bag should contain 7 elements. after drawing it should contain one less", func(t *testing.T) {
 		t.Parallel()
 		bag := newBag()
-		if len(bag.bag) != 7 {
-			t.Errorf("wanted bag to have 7 pieces, got %d", len(bag.bag))
-		}
 		bag.draw()
 		if len(bag.bag) != 6 {
 			t.Errorf("wanted bag to have 6 pieces, got %d", len(bag.bag))
