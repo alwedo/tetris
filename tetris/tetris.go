@@ -147,13 +147,12 @@ func (t *Tetris) rotate(a Action) {
 }
 
 func (t *Tetris) setTetromino() {
-	if t.Tetromino == nil && t.NexTetromino == nil {
-		t.Tetromino = t.bag.draw()
-		t.NexTetromino = t.bag.draw()
-	} else {
-		t.Tetromino = t.NexTetromino
+	if t.NexTetromino == nil {
 		t.NexTetromino = t.bag.draw()
 	}
+	t.Tetromino = t.NexTetromino
+	t.NexTetromino = t.bag.draw()
+
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 }
 
@@ -190,7 +189,7 @@ func (t *Tetris) toStack() {
 			}
 		}
 	}
-	t.Tetromino = nil
+	t.Tetromino = nil // WHY do I set the tetromino to nil here?
 }
 
 func (t *Tetris) setLevel() {
