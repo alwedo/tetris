@@ -1,3 +1,40 @@
+// Package tetris contains the logic of the game.
+// Based on:
+//   - https://tetris.wiki/Tetris_Guideline
+//   - https://tetris.fandom.com/wiki/Tetris_Guideline
+//
+// Tetris © 1985~2025 Tetris Holding.
+// Tetris logos, Tetris theme song and Tetriminos are trademarks of Tetris Holding.
+// The Tetris trade dress is owned by Tetris Holding.
+// Licensed to The Tetris Company.
+// Tetris Game Design by Alexey Pajitnov.
+// Tetris Logo Design by Roger Dean.
+// All Rights Reserved.
+//
+// Usage:
+// ctx, cancel := context.WithCancel(context.Background())
+// defer cancel()
+//
+// g := tetris.Start(ctx)
+//
+//	go func() {
+//		for {
+//			select {
+//			case t := <-g.UpdateCh:
+//				if t.GameOver {
+//					// finish game.
+//					// can use cancel() here to signal exiting
+//					return
+//				}
+//				// use t to print the status.
+//			case <-ctx.Done():
+//				return
+//			}
+//		}
+//	}()
+//
+// g.Do(tetris.MoveLeft()) // send commands
+
 package tetris
 
 import (
@@ -11,12 +48,18 @@ const defaultAnimationDelay = 320 * time.Millisecond
 type Game struct {
 	// UpdateCh will receive a Tetris status every
 	// time the status changes by an action.
+	// This channel is non-blocking. Caller is responible
+	// for the timely use of these updates, otherwise
+	// the game will drop them.
 	UpdateCh <-chan Tetris
 
 	actionCh chan Command
 	tetris   *Tetris
 }
 
+// Start() starts a new Tetris Game.
+// Use a context with cancellation to
+// control when to cancel the game.
 func Start(ctx context.Context) *Game {
 	uCh := make(chan Tetris)
 	aCh := make(chan Command)
@@ -88,6 +131,8 @@ func Start(ctx context.Context) *Game {
 	return g
 }
 
+// Do() performs a command of the tetris.Command type.
+// This function is safe to call asynchronously.
 func (g *Game) Do(c Command) {
 	g.actionCh <- c
 }

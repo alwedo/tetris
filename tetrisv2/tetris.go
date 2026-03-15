@@ -1,15 +1,3 @@
-// Package tetris contains the logic of the game.
-// Based on:
-//   - https://tetris.wiki/Tetris_Guideline
-//   - https://tetris.fandom.com/wiki/Tetris_Guideline
-//
-// Tetris © 1985~2025 Tetris Holding.
-// Tetris logos, Tetris theme song and Tetriminos are trademarks of Tetris Holding.
-// The Tetris trade dress is owned by Tetris Holding.
-// Licensed to The Tetris Company.
-// Tetris Game Design by Alexey Pajitnov.
-// Tetris Logo Design by Roger Dean.
-// All Rights Reserved.
 package tetris
 
 import (
