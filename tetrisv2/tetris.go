@@ -217,22 +217,6 @@ func (t *Tetris) rotate(a rotateAction) {
 	}
 }
 
-func (t *Tetris) setTetromino() {
-	if t.NexTetromino == nil {
-		t.NexTetromino = t.bag.draw()
-	}
-
-	// we consider game over when next tetromino spawn's
-	// position would have a collision with the stack.
-	if t.isCollision(0, 0, t.NexTetromino) {
-		t.GameOver = true
-		return
-	}
-
-	t.Tetromino, t.NexTetromino = t.NexTetromino, t.bag.draw()
-	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
-}
-
 func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
 	// isCollision() will receive the desired future X and Y tetromino's position
 	// and calculate if there is a collision or if it's out of bounds from the stack
@@ -277,15 +261,29 @@ func (t *Tetris) toStack() {
 	}
 }
 
+func (t *Tetris) setTetromino() {
+	if t.NexTetromino == nil {
+		t.NexTetromino = t.bag.draw()
+	}
+
+	// we consider game over when next tetromino spawn's
+	// position would have a collision with the stack.
+	if t.isCollision(0, 0, t.NexTetromino) {
+		t.GameOver = true
+		return
+	}
+
+	t.Tetromino, t.NexTetromino = t.NexTetromino, t.bag.draw()
+	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
+}
+
 func (t *Tetris) finishRound() {
-	// finishRound trigger actions related to cleared lines
-	// after the round ends:
-	// - Rotates the Tetrominoes
+	// - Rotates Tetromino and NexTetromino
 	// - Removes completed lines
 	// - Increases Lines count
 	// - Empties the LinesClearedIndex
 	// - Calculates new level
-	t.setTetromino()
+	t.setTetromino() // evaluates game over
 
 	if len(t.LinesClearedIndex) == 0 {
 		return
