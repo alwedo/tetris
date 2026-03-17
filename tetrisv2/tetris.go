@@ -278,44 +278,43 @@ func (t *Tetris) setTetromino() {
 }
 
 func (t *Tetris) finishRound() {
-	// - Rotates Tetromino and NexTetromino
 	// - Removes completed lines
 	// - Increases Lines count
 	// - Empties the LinesClearedIndex
 	// - Calculates new level
+	// - Rotates Tetromino and NexTetromino
+
+	if len(t.LinesClearedIndex) > 0 {
+		// remove complete lines in reverse order to avoid index shift issues.
+		for i := len(t.LinesClearedIndex) - 1; i >= 0; i-- {
+			t.Stack = append(t.Stack[:t.LinesClearedIndex[i]], t.Stack[t.LinesClearedIndex[i]+1:]...)
+			t.Stack = append(t.Stack, make([]Shape, 10))
+		}
+		t.Lines += len(t.LinesClearedIndex)
+		t.LinesClearedIndex = nil
+
+		// set the fixed-goal level system
+		// https://tetris.wiki/Marathon
+		//
+		// In the fixed-goal system, each level requires 10 lines to clear.
+		// If the player starts at a later level, the number of lines required is the same
+		// as if starting at level 1. An example is when the player starts at level 5,
+		// the player will have to clear 50 lines to advance to level 6
+		var l int
+		switch {
+		case t.Lines < 10:
+			l = 1
+		case t.Lines >= 10 && t.Lines < 100:
+			l = (t.Lines/10)%10 + 1
+		case t.Lines >= 100:
+			l = t.Lines/10 + 1
+		}
+		if l > t.Level {
+			t.Level = l
+		}
+	}
+
 	t.setTetromino() // evaluates game over
-
-	if len(t.LinesClearedIndex) == 0 {
-		return
-	}
-
-	// remove complete lines in reverse order to avoid index shift issues.
-	for i := len(t.LinesClearedIndex) - 1; i >= 0; i-- {
-		t.Stack = append(t.Stack[:t.LinesClearedIndex[i]], t.Stack[t.LinesClearedIndex[i]+1:]...)
-		t.Stack = append(t.Stack, make([]Shape, 10))
-	}
-	t.Lines += len(t.LinesClearedIndex)
-	t.LinesClearedIndex = nil
-
-	// set the fixed-goal level system
-	// https://tetris.wiki/Marathon
-	//
-	// In the fixed-goal system, each level requires 10 lines to clear.
-	// If the player starts at a later level, the number of lines required is the same
-	// as if starting at level 1. An example is when the player starts at level 5,
-	// the player will have to clear 50 lines to advance to level 6
-	var l int
-	switch {
-	case t.Lines < 10:
-		l = 1
-	case t.Lines >= 10 && t.Lines < 100:
-		l = (t.Lines/10)%10 + 1
-	case t.Lines >= 100:
-		l = t.Lines/10 + 1
-	}
-	if l > t.Level {
-		t.Level = l
-	}
 }
 
 func (t *Tetris) dropDownDelta() int {
