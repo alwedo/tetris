@@ -98,6 +98,7 @@ func Start(ctx context.Context) *Game {
 				isNextRound := cmd(g.tetris)
 				if isNextRound {
 					ticker.Stop()
+					g.tetris.toStack()
 
 					// If we have cleared lines we give the caller time to do an animation.
 					if len(g.tetris.LinesClearedIndex) > 0 {

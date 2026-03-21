@@ -58,7 +58,6 @@ type Command func(*Tetris) bool
 func DropDown() Command {
 	return func(t *Tetris) bool {
 		t.Tetromino.Y += t.dropDownDelta()
-		t.toStack()
 		return true
 	}
 }
@@ -68,7 +67,6 @@ func DropDown() Command {
 func MoveDown() Command {
 	return func(t *Tetris) bool {
 		if t.isCollision(0, -1, t.Tetromino) {
-			t.toStack()
 			return true
 		}
 		t.Tetromino.Y--
