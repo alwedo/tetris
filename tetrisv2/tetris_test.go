@@ -9,7 +9,7 @@ import (
 func newTestTetris(shape Shape) *Tetris {
 	t := newTetris()
 	t.Tetromino = shapeMap[shape]()
-	t.NexTetromino = shapeMap[shape]()
+	t.NextTetromino = shapeMap[shape]()
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 	return t
 }
@@ -495,7 +495,7 @@ func TestToStack(t *testing.T) {
 func TestFinishRound(t *testing.T) {
 	t.Run("it rotates the tetrominoes", func(t *testing.T) {
 		tetris := newTetris()
-		wantTetrominoShape := tetris.NexTetromino.Shape
+		wantTetrominoShape := tetris.NextTetromino.Shape
 		tetris.finishRound()
 		if tetris.Tetromino.Shape != wantTetrominoShape {
 			t.Errorf("wanted current tetromino to be %s, got %s", wantTetrominoShape, tetris.Tetromino.Shape)
@@ -578,16 +578,23 @@ func TestFinishRound(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	tetris := newTestTetris(J)
-	MoveDown()(tetris)
-	if reflect.DeepEqual(tetris, tetris.read()) {
-		t.Errorf("tetris and tetris.read() content should be equal. wanted %v, got %v", tetris, tetris.read())
-	}
+	DropDown()(tetris)
+	tetris.toStack()
 	got := tetris.read()
+	if tetris.Tetromino.Shape != got.Tetromino.Shape {
+		t.Errorf("wanted tetromino shape to be %s, got %s", tetris.Tetromino.Shape, got.Tetromino.Shape)
+	}
 	if tetris.Tetromino == got.Tetromino {
 		t.Errorf("tetrominos' pointers should be different. wanted %p, got %p", tetris.Tetromino, got.Tetromino)
 	}
-	if tetris.NexTetromino == got.NexTetromino {
-		t.Errorf("next tetrominos' pointers should be different. wanted %p, got %p", tetris.NexTetromino, got.NexTetromino)
+	if tetris.NextTetromino.Shape != got.NextTetromino.Shape {
+		t.Errorf("wanted next tetromino shape to be %s, got %s", tetris.NextTetromino.Shape, got.NextTetromino.Shape)
+	}
+	if tetris.NextTetromino == got.NextTetromino {
+		t.Errorf("next tetrominos' pointers should be different. wanted %p, got %p", tetris.NextTetromino, got.NextTetromino)
+	}
+	if !reflect.DeepEqual(got.Stack, tetris.Stack) {
+		t.Errorf("Stack content should be equal. wanted %v, got %v", tetris.Stack, got.Stack)
 	}
 }
 
@@ -634,15 +641,15 @@ func TestSetTetromino(t *testing.T) {
 	t.Run("first time it populates current and next tetromino", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.setTetromino()
-		if tetris.Tetromino == nil || tetris.NexTetromino == nil {
-			t.Errorf("want Tetromino and NextTetromino to not be nil, got: %v, %v", tetris.Tetromino, tetris.NexTetromino)
+		if tetris.Tetromino == nil || tetris.NextTetromino == nil {
+			t.Errorf("want Tetromino and NextTetromino to not be nil, got: %v, %v", tetris.Tetromino, tetris.NextTetromino)
 		}
 	})
 	t.Run("after tetromino has been transferred to the stack, moves next tetromino to current", func(t *testing.T) {
 		tetris := newTetris()
 		DropDown()(tetris)
 		tetris.toStack()
-		wantShape := tetris.NexTetromino.Shape
+		wantShape := tetris.NextTetromino.Shape
 		tetris.setTetromino()
 		if tetris.Tetromino.Shape != wantShape {
 			t.Errorf("wanted current tetromino to have shape %v, got %v", wantShape, tetris.Tetromino.Shape)

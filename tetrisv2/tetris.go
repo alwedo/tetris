@@ -18,7 +18,7 @@ type Tetris struct {
 	Tetromino *Tetromino
 
 	// Next Tetromino to be drawed.
-	NexTetromino *Tetromino
+	NextTetromino *Tetromino
 
 	// Current level.
 	Level int
@@ -257,18 +257,18 @@ func (t *Tetris) toStack() {
 }
 
 func (t *Tetris) setTetromino() {
-	if t.NexTetromino == nil {
-		t.NexTetromino = t.bag.draw()
+	if t.NextTetromino == nil {
+		t.NextTetromino = t.bag.draw()
 	}
 
 	// we consider game over when next tetromino spawn's
 	// position would have a collision with the stack.
-	if t.isCollision(0, 0, t.NexTetromino) {
+	if t.isCollision(0, 0, t.NextTetromino) {
 		t.gameOver = true
 		return
 	}
 
-	t.Tetromino, t.NexTetromino = t.NexTetromino, t.bag.draw()
+	t.Tetromino, t.NextTetromino = t.NextTetromino, t.bag.draw()
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 }
 
@@ -324,20 +324,19 @@ func (t *Tetris) dropDownDelta() int {
 
 // read() returns a copy of the current Tetris status that's safe to read concurrently.
 func (t *Tetris) read() Tetris {
-	var stack [][]Shape
-	if t.Stack != nil {
-		stack = make([][]Shape, len(t.Stack))
-		for i := range t.Stack {
-			stack[i] = make([]Shape, len(t.Stack[i]))
-			copy(stack[i], t.Stack[i])
-		}
+	stack := make([][]Shape, len(t.Stack))
+	for i := range t.Stack {
+		stack[i] = append([]Shape(nil), t.Stack[i]...)
 	}
+
+	cleared := append([]int(nil), t.LinesClearedIndex...)
 	return Tetris{
-		Stack:        stack,
-		Tetromino:    t.Tetromino.copy(),
-		NexTetromino: t.NexTetromino.copy(),
-		Level:        t.Level,
-		Lines:        t.Lines,
+		Stack:             stack,
+		Tetromino:         t.Tetromino.copy(),
+		NextTetromino:     t.NextTetromino.copy(),
+		Level:             t.Level,
+		Lines:             t.Lines,
+		LinesClearedIndex: cleared,
 	}
 }
 
