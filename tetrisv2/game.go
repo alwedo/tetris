@@ -15,22 +15,27 @@
 //
 //	func main() {
 //		ctx, cancel := context.WithCancel(context.Background())
-//		defer cancel() // use cancel func to end the game if needed
+//		defer cancel()
 //		t := tetris.Start(ctx)
 //
 //		// asynchronously send commands to the game
 //		go func() {
-//			t.Do(tetris.MoveRight()) // or any other action
+//			for {
+//				select {
+//				case msg, ok := <-t.UpdateCh:
+//					if !ok { // game over
+//						return
+//					}
+//					// use tetris status
+//					fmt.Println(msg)
+//				case <-ctx.Done():
+//					// use cancel func to end the game if needed
+//					return
+//				}
+//			}
 //		}()
 //
-//		for {
-//			msg, ok := <-t.UpdateCh
-//			if !ok { // game over
-//				return
-//			}
-//			// use tetris status
-//			fmt.Println(msg)
-//		}
+//		t.Do(tetris.MoveRight()) // or any other action
 //	}
 package tetris
 
@@ -40,7 +45,36 @@ import (
 	"time"
 )
 
-const defaultAnimationDelay = 320 * time.Millisecond
+const animationDelay = 320 * time.Millisecond
+
+type GameOpts func(*Game)
+
+// WithCustomTicker provides a custom ticker that
+// replaces the default time.Ticker. Used for testing.
+func WithCustomTicker(t Ticker) GameOpts {
+	return func(g *Game) {
+		g.ticker.Stop()
+		g.ticker = t
+	}
+}
+
+// WithCustomStack modifies the stack given the provided index
+// and row configuration. Used for testing.
+func WithCustomStack(update map[int][]Shape) GameOpts {
+	return func(g *Game) {
+		for k, v := range update {
+			g.tetris.Stack[k] = v
+		}
+	}
+}
+
+// WithCustomSape will set the current Tetromino to the
+// provided shape. Used for testing.
+func WithCustomSape(s Shape) GameOpts {
+	return func(g *Game) {
+		g.tetris.Tetromino = shapeMap[s]()
+	}
+}
 
 type Game struct {
 	// UpdateCh will receive a Tetris status every
@@ -55,12 +89,14 @@ type Game struct {
 
 	actionCh chan Command
 	tetris   *Tetris
+	ticker   Ticker
 }
 
 // Start() starts a new Tetris Game.
 // Use a context with cancellation to
 // control when to cancel the game.
-func Start(ctx context.Context) *Game {
+func Start(ctx context.Context, opts ...GameOpts) *Game {
+	ctx, cancel := context.WithCancel(ctx)
 	uCh := make(chan Tetris)
 	aCh := make(chan Command)
 
@@ -69,15 +105,16 @@ func Start(ctx context.Context) *Game {
 		actionCh: aCh,
 		tetris:   newTetris(),
 	}
-
-	ticker := time.NewTicker(setTime(g.tetris))
-	ctx, cancel := context.WithCancel(ctx)
+	g.ticker = newTimeTicker(setTime(g.tetris))
+	for _, o := range opts {
+		o(g)
+	}
 
 	// Ticker goroutine
 	go func() {
 		for {
 			select {
-			case <-ticker.C:
+			case <-g.ticker.C():
 				g.actionCh <- MoveDown()
 			case <-ctx.Done():
 				return
@@ -87,7 +124,7 @@ func Start(ctx context.Context) *Game {
 
 	// Main game loop
 	go func() {
-		defer ticker.Stop()
+		defer g.ticker.Stop()
 		defer close(uCh)
 		defer close(aCh)
 		defer cancel()
@@ -97,7 +134,7 @@ func Start(ctx context.Context) *Game {
 			case cmd := <-aCh:
 				isNextRound := cmd(g.tetris)
 				if isNextRound {
-					ticker.Stop()
+					g.ticker.Stop()
 					g.tetris.toStack()
 
 					// If we have cleared lines we give the caller time to do an animation.
@@ -107,7 +144,7 @@ func Start(ctx context.Context) *Game {
 						case uCh <- g.tetris.read():
 						default:
 						}
-						time.Sleep(defaultAnimationDelay)
+						time.Sleep(animationDelay)
 					}
 					g.tetris.finishRound()
 				}
@@ -122,7 +159,7 @@ func Start(ctx context.Context) *Game {
 					return
 				}
 
-				ticker.Reset(setTime(g.tetris))
+				g.ticker.Reset(setTime(g.tetris))
 			case <-ctx.Done():
 				return
 			}
