@@ -12,29 +12,26 @@
 // All Rights Reserved.
 //
 // Usage:
-// ctx, cancel := context.WithCancel(context.Background())
-// defer cancel()
 //
-// g := tetris.Start(ctx)
+//	func main() {
+//		ctx, cancel := context.WithCancel(context.Background())
+//		defer cancel() // use cancel func to end the game if needed
+//		t := tetris.Start(ctx)
 //
-//	go func() {
+//		// asynchronously send commands to the game
+//		go func() {
+//			t.Do(tetris.MoveRight()) // or any other action
+//		}()
+//
 //		for {
-//			select {
-//			case t := <-g.UpdateCh:
-//				if t.GameOver {
-//					// finish game.
-//					// can use cancel() here to signal exiting
-//					return
-//				}
-//				// use t to print the status.
-//			case <-ctx.Done():
+//			msg, ok := <-t.UpdateCh
+//			if !ok { // game over
 //				return
 //			}
+//			// use tetris status
+//			fmt.Println(msg)
 //		}
-//	}()
-//
-// g.Do(tetris.MoveLeft()) // send commands
-
+//	}
 package tetris
 
 import (
@@ -48,6 +45,9 @@ const defaultAnimationDelay = 320 * time.Millisecond
 type Game struct {
 	// UpdateCh will receive a Tetris status every
 	// time the status changes by an action.
+	//
+	// The game will be over when the channel is closed.
+	//
 	// This channel is non-blocking. Caller is responible
 	// for the timely use of these updates, otherwise
 	// the game will drop them.
@@ -118,7 +118,7 @@ func Start(ctx context.Context) *Game {
 				default:
 				}
 
-				if g.tetris.GameOver {
+				if g.tetris.gameOver {
 					return
 				}
 

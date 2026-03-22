@@ -647,16 +647,16 @@ func TestSetTetromino(t *testing.T) {
 		if tetris.Tetromino.Shape != wantShape {
 			t.Errorf("wanted current tetromino to have shape %v, got %v", wantShape, tetris.Tetromino.Shape)
 		}
-		if tetris.GameOver {
-			t.Errorf("wanted GameOver to be false, got %v", tetris.GameOver)
+		if tetris.gameOver {
+			t.Errorf("wanted GameOver to be false, got %v", tetris.gameOver)
 		}
 	})
 	t.Run("turns GameOver true if next tetromino has collision with stack", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.toStack()
 		tetris.setTetromino()
-		if !tetris.GameOver {
-			t.Errorf("wanted GameOver to be true, got %v", tetris.GameOver)
+		if !tetris.gameOver {
+			t.Errorf("wanted GameOver to be true, got %v", tetris.gameOver)
 		}
 	})
 }

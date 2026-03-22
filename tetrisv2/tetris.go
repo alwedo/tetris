@@ -34,10 +34,7 @@ type Tetris struct {
 	// animation time.
 	LinesClearedIndex []int
 
-	// GameOver will be true when the game is over (duh)
-	// and no further updates will be sent to the updateCh.
-	GameOver bool
-
+	gameOver    bool
 	bag         *bag
 	remoteLines int
 }
@@ -267,7 +264,7 @@ func (t *Tetris) setTetromino() {
 	// we consider game over when next tetromino spawn's
 	// position would have a collision with the stack.
 	if t.isCollision(0, 0, t.NexTetromino) {
-		t.GameOver = true
+		t.gameOver = true
 		return
 	}
 
@@ -341,7 +338,6 @@ func (t *Tetris) read() Tetris {
 		NexTetromino: t.NexTetromino.copy(),
 		Level:        t.Level,
 		Lines:        t.Lines,
-		GameOver:     t.GameOver,
 	}
 }
 
