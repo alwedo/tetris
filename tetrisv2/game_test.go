@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"sync"
 	"testing"
+	"testing/synctest"
 	"time"
 
 	"github.com/alwedo/tetris/tetrisv2/tetristest"
@@ -97,5 +98,26 @@ func TestStart(t *testing.T) {
 		if gotDelay <= animationDelay-2*time.Millisecond || gotDelay >= animationDelay+2*time.Millisecond {
 			t.Errorf("wanted duration between updates to be %d ±2ms, got %d", animationDelay.Milliseconds(), gotDelay.Milliseconds())
 		}
+	})
+
+	t.Run("channel close on game over", func(t *testing.T) {
+		synctest.Test(t, func(t *testing.T) {
+			game := Start(t.Context())
+			var wg = sync.WaitGroup{}
+			var wantGameOver bool
+			wg.Go(func() {
+				for {
+					_, ok := <-game.UpdateCh
+					if !ok {
+						wantGameOver = true
+						return
+					}
+				}
+			})
+			wg.Wait()
+			if !wantGameOver {
+				t.Errorf("wanted gameOver to be true but is %v", wantGameOver)
+			}
+		})
 	})
 }

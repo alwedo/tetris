@@ -113,7 +113,10 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 		for {
 			select {
 			case <-g.ticker.C():
-				g.actionCh <- MoveDown()
+				select {
+				case g.actionCh <- MoveDown():
+				default:
+				}
 			case <-ctx.Done():
 				return
 			}
@@ -170,7 +173,10 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 // Do() performs a command of the tetris.Command type.
 // This function is safe to call asynchronously.
 func (g *Game) Do(c Command) {
-	g.actionCh <- c
+	select {
+	case g.actionCh <- c:
+	default:
+	}
 }
 
 func setTime(t *Tetris) time.Duration {
