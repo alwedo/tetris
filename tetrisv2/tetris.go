@@ -51,7 +51,7 @@ const (
 type Command func(*Tetris) bool
 
 // DropDown moves the tetromino down the stack until it founds
-// a collition. This action immediately triggers a new round.
+// a collision. This action immediately triggers a new round.
 func DropDown() Command {
 	return func(t *Tetris) bool {
 		t.Tetromino.Y += t.dropDownDelta()
@@ -59,7 +59,7 @@ func DropDown() Command {
 	}
 }
 
-// MoveDown moves the tromino one step down. If the action can
+// MoveDown moves the tetromino one step down. If the action can
 // not be taken due to a collision, it will trigger a new round.
 func MoveDown() Command {
 	return func(t *Tetris) bool {
@@ -104,7 +104,7 @@ func RotateLeft() Command {
 	}
 }
 
-// RotateeRight will rotate the tetromino clockwise.
+// RotateRight will rotate the tetromino clockwise.
 // This action has no effect if there is a collision.
 func RotateRight() Command {
 	return func(t *Tetris) bool {
@@ -222,7 +222,7 @@ func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
 			if x {
 				// the position of the tetromino cell against the stack is:
 				// current X and Y + cell index offset + desired position offset
-				// Y axis decrease to 0 so we need to substract the index
+				// Y axis decrease to 0 so we need to subtract the index
 				yPos := tetromino.Y - iy + deltaY
 				xPos := tetromino.X + ix + deltaX
 
