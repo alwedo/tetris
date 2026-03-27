@@ -6,11 +6,13 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/alwedo/tetris/tetrisv2/tetristest"
 )
 
 func TestStart(t *testing.T) {
 	t.Run("ticker should call MoveDown(), decreasing the tetromino's Y position by 1 and resetting the ticker", func(t *testing.T) {
-		mockTicker := NewMockTicker()
+		mockTicker := tetristest.NewMockTicker()
 		game := Start(context.Background(), WithCustomTicker(mockTicker))
 		wantTetrominoPos := game.tetris.Tetromino.Y - 1
 
@@ -20,8 +22,8 @@ func TestStart(t *testing.T) {
 			if msg.Tetromino.Y != wantTetrominoPos {
 				t.Errorf("wanted tetromino Y Position to be %d, got %d", wantTetrominoPos, msg.Tetromino.Y)
 			}
-			if mockTicker.resetCount.Load() != 1 {
-				t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.resetCount.Load())
+			if mockTicker.ResetCount.Load() != 1 {
+				t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.ResetCount.Load())
 			}
 		})
 
@@ -30,17 +32,17 @@ func TestStart(t *testing.T) {
 	})
 
 	t.Run("action that triggers a new round stops and resets the ticker", func(t *testing.T) {
-		mockTicker := NewMockTicker()
+		mockTicker := tetristest.NewMockTicker()
 		game := Start(context.Background(), WithCustomTicker(mockTicker))
 
 		var wg sync.WaitGroup
 		wg.Go(func() {
 			<-game.UpdateCh
-			if mockTicker.resetCount.Load() != 1 {
-				t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.resetCount.Load())
+			if mockTicker.ResetCount.Load() != 1 {
+				t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.ResetCount.Load())
 			}
-			if mockTicker.stopCount.Load() != 1 {
-				t.Errorf("wanted ticker stopCount to be 1, got %d", mockTicker.stopCount.Load())
+			if mockTicker.StopCount.Load() != 1 {
+				t.Errorf("wanted ticker stopCount to be 1, got %d", mockTicker.StopCount.Load())
 			}
 		})
 
@@ -51,11 +53,11 @@ func TestStart(t *testing.T) {
 	t.Run("new round action with cleared lines trigger animation delay", func(t *testing.T) {
 		ctx, cancel := context.WithCancel(context.Background())
 		game := Start(ctx,
-			WithCustomTicker(NewMockTicker()),
+			WithCustomTicker(tetristest.NewMockTicker()),
 			WithCustomStack(map[int][]Shape{
 				0: {I, I, I, "", "", "", "", I, I, I},
 			}),
-			WithCustomSape(I),
+			WithCustomShape(I),
 		)
 		var gotUpdates []time.Time
 		var gotClearedLinesIndexes []int
