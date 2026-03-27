@@ -3,6 +3,7 @@ package tetris
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 )
 
@@ -194,7 +195,7 @@ func TestMoveActions(t *testing.T) {
 func TestWallKick(t *testing.T) {
 	// for this test we set the tetromino in the middle of the stack to
 	// allow for setting up multiple blocks in order to test all the cases.
-	// we don't test for case 0 (0,0) since that donesn't wall kick.
+	// we don't test for case 0 (0,0) since that doesn't wall kick.
 	tests := []struct {
 		name         string
 		shape        Shape
@@ -610,18 +611,20 @@ func TestRandomBag(t *testing.T) {
 
 	t.Run("first draw should always be I, J, L or T", func(t *testing.T) {
 		t.Parallel()
+		var wg = sync.WaitGroup{}
 		for range 10 {
-			go func() {
+			wg.Go(func() {
 				bag := newBag()
 				tetromino := bag.draw()
 				if tetromino.Shape == O || tetromino.Shape == Z || tetromino.Shape == S {
 					t.Errorf("wanted I, J, L, or T, got %v", tetromino.Shape)
 				}
-			}()
+			})
 		}
+		wg.Wait()
 	})
 
-	t.Run("after drawing 7 tetrominos the bag should empty. next draw whould replenish it", func(t *testing.T) {
+	t.Run("after drawing 7 tetrominos the bag should empty. next draw would replenish it", func(t *testing.T) {
 		t.Parallel()
 		bag := newBag()
 		for range 7 {
