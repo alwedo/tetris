@@ -47,22 +47,22 @@ func TestIsCollision(t *testing.T) {
 			wantCollision: true,
 		},
 		{
-			name:          "left bond collision",
+			name:          "left bound collision",
 			deltaX:        -4,
 			wantCollision: true,
 		},
 		{
-			name:          "right bond collision",
+			name:          "right bound collision",
 			deltaX:        5,
 			wantCollision: true,
 		},
 		{
-			name:          "bottom bond collision",
+			name:          "bottom bound collision",
 			deltaY:        -19,
 			wantCollision: true,
 		},
 		{
-			name: "upper bond collision",
+			name: "upper bound collision",
 			// when drafting an I and rotating it immediately, it
 			// should put the tetromino out of the upper bond.
 			// the collision should allow for a wall-kick.
@@ -521,7 +521,7 @@ func TestFinishRound(t *testing.T) {
 		}
 	})
 
-	t.Run("increases the number of lines and cleares LinesClearedIndex", func(t *testing.T) {
+	t.Run("increases the number of lines and clears LinesClearedIndex", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.LinesClearedIndex = []int{1, 2}
 		tetris.finishRound()

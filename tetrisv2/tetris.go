@@ -11,13 +11,13 @@ type Tetris struct {
 	// Columns are 0 > 9 left to right and represent the X axis
 	// Rows are 19 > 0 top to bottom and represent the Y axis
 	// An empty string is an empty cell. Otherwise it has the
-	// shape of the teromino.
+	// shape of the tetromino.
 	Stack [][]Shape
 
 	// Current Tetromino in play.
 	Tetromino *Tetromino
 
-	// Next Tetromino to be drawed.
+	// Next Tetromino to be drawn.
 	NextTetromino *Tetromino
 
 	// Current level.
@@ -50,7 +50,7 @@ const (
 // They return a bool that indicates if the round is over.
 type Command func(*Tetris) bool
 
-// DropDown moves the tetromino down the stack until it founds
+// DropDown moves the tetromino down the stack until it finds
 // a collision. This action immediately triggers a new round.
 func DropDown() Command {
 	return func(t *Tetris) bool {
