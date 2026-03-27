@@ -68,9 +68,9 @@ func WithCustomStack(update map[int][]Shape) GameOpts {
 	}
 }
 
-// WithCustomSape will set the current Tetromino to the
+// WithCustomShape will set the current Tetromino to the
 // provided shape. Used for testing.
-func WithCustomSape(s Shape) GameOpts {
+func WithCustomShape(s Shape) GameOpts {
 	return func(g *Game) {
 		g.tetris.Tetromino = shapeMap[s]()
 	}
@@ -82,7 +82,7 @@ type Game struct {
 	//
 	// The game will be over when the channel is closed.
 	//
-	// This channel is non-blocking. Caller is responible
+	// This channel is non-blocking. Caller is responsible
 	// for the timely use of these updates, otherwise
 	// the game will drop them.
 	UpdateCh <-chan Tetris
@@ -93,8 +93,6 @@ type Game struct {
 }
 
 // Start() starts a new Tetris Game.
-// Use a context with cancellation to
-// control when to cancel the game.
 func Start(ctx context.Context, opts ...GameOpts) *Game {
 	ctx, cancel := context.WithCancel(ctx)
 	uCh := make(chan Tetris)
@@ -180,7 +178,7 @@ func setTime(t *Tetris) time.Duration {
 	// tetromino further down the stack. Based on https://tetris.wiki/Marathon
 	//
 	// Time = (0.8-((Level-1)*0.007))^(Level-1)
-	l := t.Level + int(t.remoteLines) - 1
+	l := t.Level + t.remoteLines - 1
 	seconds := math.Pow(0.8-float64(l)*0.007, float64(l))
 
 	return time.Duration(seconds * float64(time.Second))
