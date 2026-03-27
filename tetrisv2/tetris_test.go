@@ -612,7 +612,7 @@ func TestRandomBag(t *testing.T) {
 	t.Run("first draw should always be I, J, L or T", func(t *testing.T) {
 		t.Parallel()
 		var wg = sync.WaitGroup{}
-		for range 10 {
+		for range 20 {
 			wg.Go(func() {
 				bag := newBag()
 				tetromino := bag.draw()

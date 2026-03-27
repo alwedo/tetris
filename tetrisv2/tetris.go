@@ -342,7 +342,7 @@ func (t *Tetris) read() Tetris {
 
 type bag struct {
 	firstDraw bool
-	bag       []*Tetromino
+	bag       []Shape
 }
 
 func newBag() *bag {
@@ -354,19 +354,18 @@ func (b *bag) draw() *Tetromino {
 	// first piece is always I, J, L, or T
 	// new bag is generated after last piece is drawn
 	if len(b.bag) == 0 {
-		for _, t := range shapeMap {
-			b.bag = append(b.bag, t())
-		}
+		b.bag = []Shape{I, T, J, L, O, S, Z}
 	}
-	firstDrawList := []Shape{I, T, J, L}
-	i := rand.Intn(len(b.bag)) //nolint: gosec
-	t := b.bag[i]
-	if b.firstDraw && !slices.Contains(firstDrawList, t.Shape) {
-		return b.draw()
+
+	candidates := b.bag
+	if b.firstDraw {
+		candidates = []Shape{I, T, J, L}
+		b.firstDraw = false
 	}
-	b.firstDraw = false
-	b.bag = append(b.bag[:i], b.bag[i+1:]...)
-	return t
+
+	t := candidates[rand.Intn(len(candidates))] //nolint: gosec
+	b.bag = slices.DeleteFunc(b.bag, func(tt Shape) bool { return tt == t })
+	return shapeMap[t]()
 }
 
 var wallKickMap = map[string]map[string][][]int{
