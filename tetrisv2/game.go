@@ -76,6 +76,8 @@ func WithCustomShape(s Shape) GameOpts {
 	}
 }
 
+// Game interfaces between the caller and the Tetris state by managing
+// automatic down ticks, state transformation and  game stages.
 type Game struct {
 	// UpdateCh will receive a Tetris status every
 	// time the status changes by an action.
@@ -94,7 +96,6 @@ type Game struct {
 
 // Start() starts a new Tetris Game.
 func Start(ctx context.Context, opts ...GameOpts) *Game {
-	ctx, cancel := context.WithCancel(ctx)
 	uCh := make(chan Tetris)
 	aCh := make(chan Command)
 
@@ -103,7 +104,7 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 		actionCh: aCh,
 		tetris:   newTetris(),
 	}
-	g.ticker = newTimeTicker(setTime(g.tetris))
+	g.ticker = newTimeTicker(g.setTime())
 	for _, o := range opts {
 		o(g)
 	}
@@ -113,6 +114,8 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 		for {
 			select {
 			case <-g.ticker.C():
+				// Ticker always reset itself
+				g.ticker.Reset(g.setTime())
 				select {
 				case g.actionCh <- MoveDown():
 				default:
@@ -128,7 +131,6 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 		defer g.ticker.Stop()
 		defer close(uCh)
 		defer close(aCh)
-		defer cancel()
 
 		for {
 			select {
@@ -145,8 +147,11 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 						case uCh <- g.tetris.read():
 						default:
 						}
-						time.Sleep(animationDelay)
+						g.ticker.Reset(animationDelay)
+					} else {
+						g.ticker.Reset(g.setTime())
 					}
+
 					g.tetris.finishRound()
 				}
 
@@ -160,7 +165,6 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 					return
 				}
 
-				g.ticker.Reset(setTime(g.tetris))
 			case <-ctx.Done():
 				return
 			}
@@ -179,12 +183,13 @@ func (g *Game) Do(c Command) {
 	}
 }
 
-func setTime(t *Tetris) time.Duration {
+func (g *Game) setTime() time.Duration {
 	// setTime() sets the duration for the ticker that will progress the
 	// tetromino further down the stack. Based on https://tetris.wiki/Marathon
 	//
 	// Time = (0.8-((Level-1)*0.007))^(Level-1)
-	l := min(t.Level+t.remoteLines-1, 100)
+	// We cap l to 100 to avoid overflowing.
+	l := min(g.tetris.Level+g.tetris.remoteLines-1, 100)
 	seconds := math.Pow(0.8-float64(l)*0.007, float64(l))
 
 	return time.Duration(seconds * float64(time.Second))
