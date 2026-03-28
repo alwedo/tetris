@@ -98,19 +98,20 @@ func TestMoveActions(t *testing.T) {
 	// 17	X X X X X X X X X X		2	X X X
 	tests := []struct {
 		name         string
-		command      Command
+		action       action
 		updateStack  func(g *Tetris)
 		wantGrid     [][]bool
 		wantLocation []int // x, y
+		wantEndRound bool
 	}{
 		{
 			name:         "Move left unblocked",
-			command:      MoveLeft(),
+			action:       moveLeft,
 			wantLocation: []int{19, 2},
 		},
 		{
-			name:    "Move left blocked",
-			command: MoveLeft(),
+			name:   "Move left blocked",
+			action: moveLeft,
 			updateStack: func(g *Tetris) {
 				g.Stack[18][2] = J
 			},
@@ -118,12 +119,12 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Move right unblocked",
-			command:      MoveRight(),
+			action:       moveRight,
 			wantLocation: []int{19, 4},
 		},
 		{
-			name:    "Move right blocked",
-			command: MoveRight(),
+			name:   "Move right blocked",
+			action: moveRight,
 			updateStack: func(g *Tetris) {
 				g.Stack[18][6] = J
 			},
@@ -131,25 +132,27 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Move down unblocked",
-			command:      MoveDown(),
+			action:       moveDown,
 			wantLocation: []int{18, 3},
 		},
 		{
-			name:    "Move down blocked",
-			command: MoveDown(),
+			name:   "Move down blocked",
+			action: moveDown,
 			updateStack: func(g *Tetris) {
 				g.Stack[17][3] = J
 			},
 			wantLocation: []int{19, 3},
+			wantEndRound: true,
 		},
 		{
 			name:         "Drop moves down until blocked",
-			command:      DropDown(),
+			action:       dropDown,
 			wantLocation: []int{1, 3},
+			wantEndRound: true,
 		},
 		{
 			name:         "Rotate right when unblocked",
-			command:      RotateRight(),
+			action:       rotateRight,
 			wantLocation: []int{19, 3},
 			wantGrid: [][]bool{
 				{false, true, true},
@@ -159,7 +162,7 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Rotate left when unblocked",
-			command:      RotateLeft(),
+			action:       rotateLeft,
 			wantLocation: []int{19, 3},
 			wantGrid: [][]bool{
 				{false, true, false},
@@ -176,7 +179,7 @@ func TestMoveActions(t *testing.T) {
 			if tt.updateStack != nil {
 				tt.updateStack(tetris)
 			}
-			tt.command(tetris)
+			gotEndRound := tetris.action(tt.action)
 			if tetris.Tetromino.Y != tt.wantLocation[0] {
 				t.Errorf("wanted tetromino's Y to be %d, got %d", tt.wantLocation[0], tetris.Tetromino.Y)
 			}
@@ -187,6 +190,9 @@ func TestMoveActions(t *testing.T) {
 				if !reflect.DeepEqual(tetris.Tetromino.Grid, tt.wantGrid) {
 					t.Errorf("wanted %v, got %v", tt.wantGrid, tetris.Tetromino.Grid)
 				}
+			}
+			if tt.wantEndRound != gotEndRound {
+				t.Errorf("wanted end round to be %t, got %t", gotEndRound, tt.wantEndRound)
 			}
 		})
 	}
@@ -199,7 +205,7 @@ func TestWallKick(t *testing.T) {
 	tests := []struct {
 		name         string
 		shape        Shape
-		command      Command
+		action       action
 		blockStack   [][]int
 		setR         func(g *Tetris)
 		wantX, wantY int
@@ -210,7 +216,7 @@ func TestWallKick(t *testing.T) {
 			// 10	. . . . . X . . . .
 			// 9	. . . O O O O . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{10, 5}},
 			wantX:      1,
 			wantY:      10,
@@ -221,7 +227,7 @@ func TestWallKick(t *testing.T) {
 			// 10	. . . X . X . . . .
 			// 9	. . . O O O O . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{10, 5}, {10, 3}},
 			wantX:      4,
 			wantY:      10,
@@ -233,7 +239,7 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . O O O O . . .
 			// 8	. . . . . . X . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 6}, {10, 5}, {10, 3}},
 			wantX:      1,
 			wantY:      9,
@@ -245,7 +251,7 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . O O O O . . .
 			// 8	. . . X . . X . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}, {10, 5}, {10, 3}},
 			wantX:      4,
 			wantY:      12,
@@ -257,12 +263,12 @@ func TestWallKick(t *testing.T) {
 			// 9	O . . . . . . . . .
 			// 8	O . . . . . . . . .
 			// 7    O . . . . . . . . .
-			shape:   I,
-			command: RotateLeft(),
+			shape:  I,
+			action: rotateLeft,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the left wall
 				t.Tetromino.X = -2
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 0,
 			wantY: 10,
@@ -274,12 +280,12 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . . . . . . . O
 			// 8	. . . . . . . . . O
 			// 7    . . . . . . . . . O
-			shape:   I,
-			command: RotateLeft(),
+			shape:  I,
+			action: rotateLeft,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the right wall
 				t.Tetromino.X = 7
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 6,
 			wantY: 10,
@@ -292,9 +298,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . . . O . . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 3}, {9, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      5,
 			wantY:      11,
 		},
@@ -306,9 +312,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . . . O . . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 3}, {9, 6}, {10, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      2,
 			wantY:      8,
 		},
@@ -319,12 +325,12 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . . . . . . . O
 			// 8	. . . . . . . . . O
 			// 7    . . . . . . . . . O
-			shape:   I,
-			command: RotateRight(),
+			shape:  I,
+			action: rotateRight,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the right wall
 				t.Tetromino.X = 7
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 6,
 			wantY: 10,
@@ -336,12 +342,12 @@ func TestWallKick(t *testing.T) {
 			// 9	O . . . . . . . . .
 			// 8	O . . . . . . . . .
 			// 7    O . . . . . . . . .
-			shape:   I,
-			command: RotateRight(),
+			shape:  I,
+			action: rotateRight,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the left wall
 				t.Tetromino.X = -2
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 0,
 			wantY: 10,
@@ -354,9 +360,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . X . O X . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      2,
 			wantY:      12,
 		},
@@ -368,9 +374,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . X . O X . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}, {10, 3}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      5,
 			wantY:      9,
 		},
@@ -382,11 +388,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . . . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 4,
 			wantY: 10,
@@ -399,11 +405,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . . . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 1,
 			wantY: 10,
@@ -416,11 +422,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . X . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}, {7, 3}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 4,
 			wantY: 8,
@@ -433,11 +439,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . X . . X . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}, {7, 3}, {7, 6}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 1,
 			wantY: 11,
@@ -456,7 +462,7 @@ func TestWallKick(t *testing.T) {
 					tetris.Stack[v[0]][v[1]] = J
 				}
 			}
-			tt.command(tetris)
+			tetris.action(tt.action)
 			if tt.wantX != tetris.Tetromino.X {
 				t.Errorf("wanted X to be %d, got %d", tt.wantX, tetris.Tetromino.X)
 			}
@@ -579,7 +585,7 @@ func TestFinishRound(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	tetris := newTestTetris(J)
-	DropDown()(tetris)
+	tetris.action(dropDown)
 	tetris.toStack()
 	got := tetris.read()
 	if tetris.Tetromino.Shape != got.Tetromino.Shape {
@@ -650,7 +656,7 @@ func TestSetTetromino(t *testing.T) {
 	})
 	t.Run("after tetromino has been transferred to the stack, moves next tetromino to current", func(t *testing.T) {
 		tetris := newTetris()
-		DropDown()(tetris)
+		tetris.action(dropDown)
 		tetris.toStack()
 		wantShape := tetris.NextTetromino.Shape
 		tetris.setTetromino()

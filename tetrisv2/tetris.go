@@ -39,87 +39,16 @@ type Tetris struct {
 	remoteLines int
 }
 
-type rotateAction string
+type action int
 
 const (
-	rotateRight rotateAction = "rotatecw"  // Rotates the Tetromino clockwise.
-	rotateLeft  rotateAction = "rotateccw" // Rotates the Tetromino counter-clockwise.
+	moveLeft action = iota
+	moveRight
+	moveDown
+	dropDown
+	rotateLeft
+	rotateRight
 )
-
-// Command are functions that change the state of the game.
-// They return a bool that indicates if the round is over.
-type Command func(*Tetris) bool
-
-// DropDown moves the tetromino down the stack until it finds
-// a collision. This action immediately triggers a new round.
-func DropDown() Command {
-	return func(t *Tetris) bool {
-		t.Tetromino.Y += t.dropDownDelta()
-		return true
-	}
-}
-
-// MoveDown moves the tetromino one step down. If the action can
-// not be taken due to a collision, it will trigger a new round.
-func MoveDown() Command {
-	return func(t *Tetris) bool {
-		if t.isCollision(0, -1, t.Tetromino) {
-			return true
-		}
-		t.Tetromino.Y--
-		return false
-	}
-}
-
-// MoveLeft will move the tetromino one step to the left.
-// This action has no effect if there is a collision.
-func MoveLeft() Command {
-	return func(t *Tetris) bool {
-		if !t.isCollision(-1, 0, t.Tetromino) {
-			t.Tetromino.X--
-			t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
-		}
-		return false
-	}
-}
-
-// MoveRight will move the tetromino one step to the right.
-// This action has no effect if there is a collision.
-func MoveRight() Command {
-	return func(t *Tetris) bool {
-		if !t.isCollision(1, 0, t.Tetromino) {
-			t.Tetromino.X++
-			t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
-		}
-		return false
-	}
-}
-
-// RotateLeft will rotate the tetromino counter clockwise.
-// This action has no effect if there is a collision.
-func RotateLeft() Command {
-	return func(t *Tetris) bool {
-		t.rotate(rotateLeft)
-		return false
-	}
-}
-
-// RotateRight will rotate the tetromino clockwise.
-// This action has no effect if there is a collision.
-func RotateRight() Command {
-	return func(t *Tetris) bool {
-		t.rotate(rotateRight)
-		return false
-	}
-}
-
-// AddRemoteLines will increase the number of remote lines by i.
-func AddRemoteLines(i int) Command {
-	return func(t *Tetris) bool {
-		t.remoteLines += i
-		return false
-	}
-}
 
 func newTetris() *Tetris {
 	// creates an empty 20x10 stack
@@ -137,7 +66,40 @@ func newTetris() *Tetris {
 	return t
 }
 
-func (t *Tetris) rotate(a rotateAction) {
+// action will perform the requested action and return
+// true if the action caused the round to finish.
+// Only dropDown and moveDown on collision return true.
+func (t *Tetris) action(a action) bool {
+	switch a {
+	case dropDown:
+		t.Tetromino.Y += t.dropDownDelta()
+		return true
+	case moveDown:
+		if t.isCollision(0, -1, t.Tetromino) {
+			return true
+		}
+		t.Tetromino.Y--
+	case moveLeft:
+		if !t.isCollision(-1, 0, t.Tetromino) {
+			t.Tetromino.X--
+		}
+	case moveRight:
+		if !t.isCollision(1, 0, t.Tetromino) {
+			t.Tetromino.X++
+		}
+	case rotateLeft:
+		t.rotate(a)
+	case rotateRight:
+		t.rotate(a)
+	default:
+		// Unlisted actions are ignored
+	}
+	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
+
+	return false
+}
+
+func (t *Tetris) rotate(a action) {
 	// https://tetris.wiki/Super_Rotation_System
 	if t.Tetromino.Shape == O {
 		// the O shape doesn't rotate.
