@@ -228,12 +228,13 @@ func (t *Tetris) setTetromino() bool {
 }
 
 // finishRound takes a slice of completed lines indexes and
-// performs end-of-round tasks:
+// performs end-of-round tasks. It returns the response from
+// setTetromino, determining if the game is over.
 // - Removes completed lines
 // - Increases Lines count
 // - Calculates new level
 // - Executes setTetromino
-func (t *Tetris) finishRound(lines []int) {
+func (t *Tetris) finishRound(lines []int) bool {
 
 	if len(lines) > 0 {
 		// remove complete lines in reverse order to avoid index shift issues.
@@ -264,7 +265,7 @@ func (t *Tetris) finishRound(lines []int) {
 		}
 	}
 
-	t.setTetromino() // evaluates game over
+	return t.setTetromino() // evaluates game over
 }
 
 func (t *Tetris) dropDownDelta() int {
