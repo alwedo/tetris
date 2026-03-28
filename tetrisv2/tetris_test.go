@@ -474,27 +474,29 @@ func TestWallKick(t *testing.T) {
 }
 
 func TestToStack(t *testing.T) {
-	tetris := newTestTetris(J)
-	tetris.toStack()
+	t.Run("moves the tetromino to the stack", func(t *testing.T) {
+		tetris := newTestTetris(J)
+		gotLines := tetris.toStack()
 
-	wantStack := [][]int{{19, 3}, {18, 3}, {18, 4}, {18, 5}}
-	for _, ws := range wantStack {
-		if tetris.Stack[ws[0]][ws[1]] != J {
-			t.Errorf("wanted stack %v to be J, got %v", ws, tetris.Stack[ws[0]][ws[1]])
+		wantStack := [][]int{{19, 3}, {18, 3}, {18, 4}, {18, 5}}
+		for _, ws := range wantStack {
+			if tetris.Stack[ws[0]][ws[1]] != J {
+				t.Errorf("wanted stack %v to be J, got %v", ws, tetris.Stack[ws[0]][ws[1]])
+			}
 		}
-	}
-	if len(tetris.LinesClearedIndex) != 0 {
-		t.Errorf("wanted empty LinesClearedIndex, got %d", len(tetris.LinesClearedIndex))
-	}
+		if len(gotLines) != 0 {
+			t.Errorf("wanted empty LinesClearedIndex, got %d", len(gotLines))
+		}
+	})
 
 	t.Run("toStack will fill LinesClearedIndex if any", func(t *testing.T) {
 		tetris := newTetris()
 		for i := range tetris.Stack[0] {
 			tetris.Stack[0][i] = I
 		}
-		tetris.toStack()
-		if len(tetris.LinesClearedIndex) != 1 {
-			t.Errorf("expected 1 line to be cleared, got %d", len(tetris.LinesClearedIndex))
+		gotLines := tetris.toStack()
+		if len(gotLines) != 1 {
+			t.Errorf("expected 1 line to be cleared, got %d", len(gotLines))
 		}
 	})
 }

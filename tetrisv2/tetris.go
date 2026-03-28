@@ -87,9 +87,7 @@ func (t *Tetris) action(a action) bool {
 		if !t.isCollision(1, 0, t.Tetromino) {
 			t.Tetromino.X++
 		}
-	case rotateLeft:
-		t.rotate(a)
-	case rotateRight:
+	case rotateLeft, rotateRight:
 		t.rotate(a)
 	default:
 		// Unlisted actions are ignored
@@ -174,9 +172,9 @@ func (t *Tetris) rotate(a action) {
 	}
 }
 
+// isCollision() will receive the desired future X and Y tetromino's position
+// and calculate if there is a collision or if it's out of bounds from the stack
 func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
-	// isCollision() will receive the desired future X and Y tetromino's position
-	// and calculate if there is a collision or if it's out of bounds from the stack
 	for iy, y := range tetromino.Grid {
 		for ix, x := range y {
 			// we check only if the tetromino cell is true as we don't
@@ -198,7 +196,10 @@ func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
 	return false
 }
 
-func (t *Tetris) toStack() {
+// toStack moves the current tetromino to the stack after
+// a collision that prevents it from moving further down.
+// It returns a slice of indexes of the lines to be cleared.
+func (t *Tetris) toStack() []int {
 	// moves the tetromino to the stack
 	for ix, x := range t.Tetromino.Grid {
 		for iy, y := range x {
@@ -208,14 +209,13 @@ func (t *Tetris) toStack() {
 		}
 	}
 
-	// Add the indexes of cleared lines. This will determine downstream
-	// steps like lines to be cleared, increase in Lines and Level and
-	// consumer animation time.
+	var lines []int
 	for i, x := range t.Stack {
 		if !slices.Contains(x, "") {
-			t.LinesClearedIndex = append(t.LinesClearedIndex, i)
+			lines = append(lines, i)
 		}
 	}
+	return lines
 }
 
 func (t *Tetris) setTetromino() {
