@@ -505,7 +505,7 @@ func TestFinishRound(t *testing.T) {
 	t.Run("it rotates the tetrominoes", func(t *testing.T) {
 		tetris := newTetris()
 		wantTetrominoShape := tetris.NextTetromino.Shape
-		tetris.finishRound()
+		tetris.finishRound(nil)
 		if tetris.Tetromino.Shape != wantTetrominoShape {
 			t.Errorf("wanted current tetromino to be %s, got %s", wantTetrominoShape, tetris.Tetromino.Shape)
 		}
@@ -514,14 +514,13 @@ func TestFinishRound(t *testing.T) {
 	t.Run("it removes completed lines from the stack", func(t *testing.T) {
 		tetris := newTetris()
 		index := 1
-		tetris.LinesClearedIndex = []int{index}
 
 		// set a complete line to be cleared
 		for i := range tetris.Stack[index] {
 			tetris.Stack[index][i] = I
 		}
 
-		tetris.finishRound()
+		tetris.finishRound([]int{index})
 		for i := range tetris.Stack[index] {
 			if tetris.Stack[index][i] != "" {
 				t.Errorf("wanted Stack[0][%d] to be empty, got %s", i, tetris.Stack[index][i])
@@ -531,13 +530,9 @@ func TestFinishRound(t *testing.T) {
 
 	t.Run("increases the number of lines and clears LinesClearedIndex", func(t *testing.T) {
 		tetris := newTetris()
-		tetris.LinesClearedIndex = []int{1, 2}
-		tetris.finishRound()
+		tetris.finishRound([]int{1, 2})
 		if tetris.Lines != 2 {
 			t.Errorf("wanted 2 lines cleared, got %d", tetris.Lines)
-		}
-		if tetris.LinesClearedIndex != nil {
-			t.Errorf("wanted LinesClearedIndex to be nil, got %v", tetris.LinesClearedIndex)
 		}
 	})
 
@@ -558,9 +553,8 @@ func TestFinishRound(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("for %d lines should have level %d", tt.lines, tt.wantLevel), func(t *testing.T) {
 				tetris := newTetris()
-				tetris.LinesClearedIndex = []int{1} // set level only happens when there are lines to be cleared.
-				tetris.Lines = tt.lines - 1         // we remove one line to offset for the LinesClearedIndex above.
-				tetris.finishRound()
+				tetris.Lines = tt.lines - 1  // we remove one line to offset for the LinesClearedIndex above.
+				tetris.finishRound([]int{1}) // set level only happens when there are lines to be cleared.
 				if tetris.Level != tt.wantLevel {
 					t.Errorf("wanted level %d, got %d", tt.wantLevel, tetris.Level)
 				}
@@ -569,15 +563,13 @@ func TestFinishRound(t *testing.T) {
 
 		t.Run("set level is not overriden until lines > level", func(t *testing.T) {
 			tetris := newTetris()
-			tetris.LinesClearedIndex = []int{1}
 			tetris.Level = 5
-			tetris.finishRound()
+			tetris.finishRound([]int{1})
 			if tetris.Level != 5 {
 				t.Errorf("wanted level 5, got %d", tetris.Level)
 			}
-			tetris.LinesClearedIndex = []int{1}
 			tetris.Lines = 49
-			tetris.finishRound()
+			tetris.finishRound([]int{1})
 			if tetris.Level != 6 {
 				t.Errorf("wanted level 6, got %d", tetris.Level)
 			}

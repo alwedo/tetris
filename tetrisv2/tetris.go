@@ -26,17 +26,8 @@ type Tetris struct {
 	// Number of lines cleared.
 	Lines int
 
-	// After finishing a round this will display the indexes
-	// of the lines cleared in the stack. Callers can use
-	// this to render cleared lines animations.
-	// When there are lines cleared Tetris will wait to
-	// start the new round by an amount determined by the
-	// animation time.
-	LinesClearedIndex []int
-
-	gameOver    bool
-	bag         *bag
-	remoteLines int
+	gameOver bool
+	bag      *bag
 }
 
 type action int
@@ -234,21 +225,21 @@ func (t *Tetris) setTetromino() {
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 }
 
-func (t *Tetris) finishRound() {
-	// - Removes completed lines
-	// - Increases Lines count
-	// - Empties the LinesClearedIndex
-	// - Calculates new level
-	// - Rotates Tetromino and NexTetromino
+// finishRound takes a slice of completed lines indexes and
+// performs end-of-round tasks:
+// - Removes completed lines
+// - Increases Lines count
+// - Calculates new level
+// - Executes setTetromino
+func (t *Tetris) finishRound(lines []int) {
 
-	if len(t.LinesClearedIndex) > 0 {
+	if len(lines) > 0 {
 		// remove complete lines in reverse order to avoid index shift issues.
-		for i := len(t.LinesClearedIndex) - 1; i >= 0; i-- {
-			t.Stack = append(t.Stack[:t.LinesClearedIndex[i]], t.Stack[t.LinesClearedIndex[i]+1:]...)
+		for i := len(lines) - 1; i >= 0; i-- {
+			t.Stack = append(t.Stack[:lines[i]], t.Stack[lines[i]+1:]...)
 			t.Stack = append(t.Stack, make([]Shape, 10))
 		}
-		t.Lines += len(t.LinesClearedIndex)
-		t.LinesClearedIndex = nil
+		t.Lines += len(lines)
 
 		// set the fixed-goal level system
 		// https://tetris.wiki/Marathon
@@ -291,14 +282,12 @@ func (t *Tetris) read() Tetris {
 		stack[i] = append([]Shape(nil), t.Stack[i]...)
 	}
 
-	cleared := append([]int(nil), t.LinesClearedIndex...)
 	return Tetris{
-		Stack:             stack,
-		Tetromino:         t.Tetromino.copy(),
-		NextTetromino:     t.NextTetromino.copy(),
-		Level:             t.Level,
-		Lines:             t.Lines,
-		LinesClearedIndex: cleared,
+		Stack:         stack,
+		Tetromino:     t.Tetromino.copy(),
+		NextTetromino: t.NextTetromino.copy(),
+		Level:         t.Level,
+		Lines:         t.Lines,
 	}
 }
 
