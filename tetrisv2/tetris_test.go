@@ -653,20 +653,20 @@ func TestSetTetromino(t *testing.T) {
 		tetris.action(dropDown)
 		tetris.toStack()
 		wantShape := tetris.NextTetromino.Shape
-		tetris.setTetromino()
+		isGameOver := tetris.setTetromino()
 		if tetris.Tetromino.Shape != wantShape {
 			t.Errorf("wanted current tetromino to have shape %v, got %v", wantShape, tetris.Tetromino.Shape)
 		}
-		if tetris.gameOver {
-			t.Errorf("wanted GameOver to be false, got %v", tetris.gameOver)
+		if isGameOver {
+			t.Errorf("wanted GameOver to be false, got %v", isGameOver)
 		}
 	})
 	t.Run("turns GameOver true if next tetromino has collision with stack", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.toStack()
-		tetris.setTetromino()
-		if !tetris.gameOver {
-			t.Errorf("wanted GameOver to be true, got %v", tetris.gameOver)
+		isGameOver := tetris.setTetromino()
+		if !isGameOver {
+			t.Errorf("wanted GameOver to be true, got %v", isGameOver)
 		}
 	})
 }

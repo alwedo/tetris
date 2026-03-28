@@ -26,8 +26,7 @@ type Tetris struct {
 	// Number of lines cleared.
 	Lines int
 
-	gameOver bool
-	bag      *bag
+	bag *bag
 }
 
 type action int
@@ -209,7 +208,10 @@ func (t *Tetris) toStack() []int {
 	return lines
 }
 
-func (t *Tetris) setTetromino() {
+// setTetromino uses the bag to draw both current
+// and next tetrominos. It returns a bool that would
+// indicate game over if NextTetromino has a collision.
+func (t *Tetris) setTetromino() bool {
 	if t.NextTetromino == nil {
 		t.NextTetromino = t.bag.draw()
 	}
@@ -217,12 +219,12 @@ func (t *Tetris) setTetromino() {
 	// we consider game over when next tetromino spawn's
 	// position would have a collision with the stack.
 	if t.isCollision(0, 0, t.NextTetromino) {
-		t.gameOver = true
-		return
+		return true
 	}
 
 	t.Tetromino, t.NextTetromino = t.NextTetromino, t.bag.draw()
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
+	return false
 }
 
 // finishRound takes a slice of completed lines indexes and
