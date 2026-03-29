@@ -146,7 +146,7 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 	}
 
 	// Receive msg from stream and send to opponent's channel.
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) //nolint: gosec
 	go func() {
 		defer cancel()
 		ch := gameInstance.p1Ch

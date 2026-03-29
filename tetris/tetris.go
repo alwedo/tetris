@@ -36,8 +36,14 @@ type Tetris struct {
 }
 
 func newTetris() *Tetris {
+	// creates an empty 20x10 stack
+	s := make([][]Shape, 20)
+	for i := range s {
+		s[i] = make([]Shape, 10)
+	}
+
 	t := &Tetris{
-		Stack: emptyStack(),
+		Stack: s,
 		Level: 1,
 		bag:   newBag(),
 	}
@@ -46,11 +52,6 @@ func newTetris() *Tetris {
 }
 
 func (t *Tetris) action(a Action) {
-	if t.Tetromino == nil {
-		// between toStack() and next round's setTetromino() Tetromino is nil.
-		// we return here to avoid user commands to cause panic.
-		return
-	}
 	switch a {
 	case MoveLeft:
 		if !t.isCollision(-1, 0, t.Tetromino) {
@@ -147,13 +148,12 @@ func (t *Tetris) rotate(a Action) {
 }
 
 func (t *Tetris) setTetromino() {
-	if t.Tetromino == nil && t.NexTetromino == nil {
-		t.Tetromino = t.bag.draw()
-		t.NexTetromino = t.bag.draw()
-	} else {
-		t.Tetromino = t.NexTetromino
+	if t.NexTetromino == nil {
 		t.NexTetromino = t.bag.draw()
 	}
+	t.Tetromino = t.NexTetromino
+	t.NexTetromino = t.bag.draw()
+
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 }
 
@@ -190,7 +190,6 @@ func (t *Tetris) toStack() {
 			}
 		}
 	}
-	t.Tetromino = nil
 }
 
 func (t *Tetris) setLevel() {
@@ -255,10 +254,7 @@ type bag struct {
 }
 
 func newBag() *bag {
-	return &bag{
-		firstDraw: true,
-		bag:       newTetrominoList(),
-	}
+	return &bag{firstDraw: true}
 }
 
 func (b *bag) draw() *Tetromino {
@@ -266,7 +262,9 @@ func (b *bag) draw() *Tetromino {
 	// first piece is always I, J, L, or T
 	// new bag is generated after last piece is drawn
 	if len(b.bag) == 0 {
-		b.bag = newTetrominoList()
+		for _, t := range shapeMap {
+			b.bag = append(b.bag, t())
+		}
 	}
 	firstDrawList := []Shape{I, T, J, L}
 	i := rand.Intn(len(b.bag)) //nolint: gosec
@@ -277,22 +275,6 @@ func (b *bag) draw() *Tetromino {
 	b.firstDraw = false
 	b.bag = append(b.bag[:i], b.bag[i+1:]...)
 	return t
-}
-
-func newTetrominoList() []*Tetromino {
-	var b []*Tetromino
-	for _, t := range shapeMap {
-		b = append(b, t())
-	}
-	return b
-}
-
-func emptyStack() [][]Shape {
-	e := make([][]Shape, 20)
-	for i := range e {
-		e[i] = make([]Shape, 10)
-	}
-	return e
 }
 
 var wallKickMap = map[string]map[string][][]int{
