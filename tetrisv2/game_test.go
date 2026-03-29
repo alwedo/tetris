@@ -20,9 +20,9 @@ func TestStart(t *testing.T) {
 
 			var wg sync.WaitGroup
 			wg.Go(func() {
-				msg := <-game.UpdateCh
-				if msg.Tetromino.Y != wantTetrominoPos {
-					t.Errorf("wanted tetromino Y Position to be %d, got %d", wantTetrominoPos, msg.Tetromino.Y)
+				msg := <-game.GameMessageCh
+				if msg.Tetris.Tetromino.Y != wantTetrominoPos {
+					t.Errorf("wanted tetromino Y Position to be %d, got %d", wantTetrominoPos, msg.Tetris.Tetromino.Y)
 				}
 				if mockTicker.ResetCount.Load() != 1 {
 					t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.ResetCount.Load())
@@ -44,7 +44,7 @@ func TestStart(t *testing.T) {
 
 			var wg sync.WaitGroup
 			wg.Go(func() {
-				<-game.UpdateCh
+				<-game.GameMessageCh
 				if mockTicker.ResetCount.Load() != 1 {
 					t.Errorf("wanted ticker resetCount to be 1, got %d", mockTicker.ResetCount.Load())
 				}
@@ -73,13 +73,13 @@ func TestStart(t *testing.T) {
 			var wg sync.WaitGroup
 			wg.Go(func() {
 				for {
-					msg, ok := <-game.UpdateCh
+					msg, ok := <-game.GameMessageCh
 					if !ok {
 						return
 					}
 					wantClearedLinesIndex := []int{0}
-					if !reflect.DeepEqual(wantClearedLinesIndex, msg.LinesClearedIndex) {
-						t.Errorf("wanted cleared lines index %v, got %v", wantClearedLinesIndex, msg.LinesClearedIndex)
+					if !reflect.DeepEqual(wantClearedLinesIndex, msg.ClearedLines) {
+						t.Errorf("wanted cleared lines index %v, got %v", wantClearedLinesIndex, msg.ClearedLines)
 					}
 					if mockTicker.LastResetDuration.Load() != animationDelay.Nanoseconds() {
 						t.Errorf("wanted ticker reset duration to be %d, got %d", animationDelay.Nanoseconds(), mockTicker.LastResetDuration.Load())
@@ -101,7 +101,7 @@ func TestStart(t *testing.T) {
 			var wantGameOver bool
 			wg.Go(func() {
 				for {
-					_, ok := <-game.UpdateCh
+					_, ok := <-game.GameMessageCh
 					if !ok {
 						wantGameOver = true
 						return

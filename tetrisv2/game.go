@@ -42,6 +42,7 @@ package tetris
 import (
 	"context"
 	"math"
+	"sync/atomic"
 	"time"
 )
 
@@ -76,10 +77,18 @@ func WithCustomShape(s Shape) GameOpts {
 	}
 }
 
+// GameMessage is the message sent to the caller after
+// every update. Contains the current Tetris status and
+// a slice of the cleared lines's indexes.
+type GameMessage struct {
+	Tetris       Tetris
+	ClearedLines []int
+}
+
 // Game interfaces between the caller and the Tetris state by managing
 // automatic down ticks, state transformation and  game stages.
 type Game struct {
-	// UpdateCh will receive a Tetris status every
+	// GameMessageCh will receive a GameMessage every
 	// time the status changes by an action.
 	//
 	// The game will be over when the channel is closed.
@@ -87,22 +96,24 @@ type Game struct {
 	// This channel is non-blocking. Caller is responsible
 	// for the timely use of these updates, otherwise
 	// the game will drop them.
-	UpdateCh <-chan Tetris
+	GameMessageCh <-chan GameMessage
 
-	actionCh chan Command
-	tetris   *Tetris
-	ticker   Ticker
+	actionCh    chan Command
+	tetris      *Tetris
+	ticker      Ticker
+	remoteLines int
+	isAnimating atomic.Bool
 }
 
 // Start() starts a new Tetris Game.
 func Start(ctx context.Context, opts ...GameOpts) *Game {
-	uCh := make(chan Tetris)
+	uCh := make(chan GameMessage)
 	aCh := make(chan Command)
 
 	g := &Game{
-		UpdateCh: uCh,
-		actionCh: aCh,
-		tetris:   newTetris(),
+		GameMessageCh: uCh,
+		actionCh:      aCh,
+		tetris:        newTetris(),
 	}
 	g.ticker = newTimeTicker(g.setTime())
 	for _, o := range opts {
@@ -132,39 +143,41 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 		defer close(uCh)
 		defer close(aCh)
 
-		for {
+		var isGameOver bool
+		for !isGameOver {
 			select {
 			case cmd := <-aCh:
-				isNextRound := cmd(g.tetris)
+				isNextRound := cmd(g)
 				if isNextRound {
 					g.ticker.Stop()
-					g.tetris.toStack()
+					linesCleared := g.tetris.toStack()
 
 					// If we have cleared lines we give the caller time to do an animation.
-					if len(g.tetris.LinesClearedIndex) > 0 {
-						// sends to Update channel are non-blocking.
+					if len(linesCleared) > 0 {
+						g.isAnimating.Store(true)
 						select {
-						case uCh <- g.tetris.read():
+						case uCh <- GameMessage{
+							Tetris:       g.tetris.read(),
+							ClearedLines: linesCleared,
+						}:
 						default:
 						}
 						g.ticker.Reset(animationDelay)
+						time.AfterFunc(animationDelay, func() {
+							g.isAnimating.Store(false)
+						})
 					} else {
 						g.ticker.Reset(g.setTime())
 					}
 
-					g.tetris.finishRound()
+					isGameOver = g.tetris.finishRound(linesCleared)
 				}
 
 				// sends to Update channel are non-blocking.
 				select {
-				case uCh <- g.tetris.read():
+				case uCh <- GameMessage{Tetris: g.tetris.read()}:
 				default:
 				}
-
-				if g.tetris.gameOver {
-					return
-				}
-
 			case <-ctx.Done():
 				return
 			}
@@ -189,8 +202,86 @@ func (g *Game) setTime() time.Duration {
 	//
 	// Time = (0.8-((Level-1)*0.007))^(Level-1)
 	// We cap l to 100 to avoid overflowing.
-	l := min(g.tetris.Level+g.tetris.remoteLines-1, 100)
+	l := min(g.tetris.Level+g.remoteLines-1, 100)
 	seconds := math.Pow(0.8-float64(l)*0.007, float64(l))
 
 	return time.Duration(seconds * float64(time.Second))
+}
+
+// Command are functions that change the state of the game.
+// They return a bool that indicates if the round is over.
+type Command func(*Game) bool
+
+// DropDown moves the tetromino down the stack until it finds
+// a collision. This action immediately triggers a new round.
+func DropDown() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(dropDown)
+	}
+}
+
+// MoveDown moves the tetromino one step down. If the action can
+// not be taken due to a collision, it will trigger a new round.
+func MoveDown() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(moveDown)
+	}
+}
+
+// MoveLeft will move the tetromino one step to the left.
+// This action has no effect if there is a collision.
+func MoveLeft() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(moveLeft)
+	}
+}
+
+// MoveRight will move the tetromino one step to the right.
+// This action has no effect if there is a collision.
+func MoveRight() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(moveRight)
+	}
+}
+
+// RotateLeft will rotate the tetromino counter clockwise.
+// This action has no effect if there is a collision.
+func RotateLeft() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(rotateLeft)
+	}
+}
+
+// RotateRight will rotate the tetromino clockwise.
+// This action has no effect if there is a collision.
+func RotateRight() Command {
+	return func(g *Game) bool {
+		if g.isAnimating.Load() {
+			return false
+		}
+		return g.tetris.action(rotateRight)
+	}
+}
+
+// AddRemoteLines will increase the number of remote lines by i.
+func AddRemoteLines(i int) Command {
+	return func(g *Game) bool {
+		g.remoteLines += i
+		return false
+	}
 }
