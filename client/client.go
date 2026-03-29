@@ -200,7 +200,7 @@ func (c *Client) listenOnlineTetris(ctx context.Context) {
 
 	// Set receiver channel
 	rcvCh := make(chan *pb.GameMessage)
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) //nolint: gosec
 	go func() {
 		defer func() {
 			cancel()

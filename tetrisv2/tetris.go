@@ -235,7 +235,6 @@ func (t *Tetris) setTetromino() bool {
 // - Calculates new level
 // - Executes setTetromino
 func (t *Tetris) finishRound(lines []int) bool {
-
 	if len(lines) > 0 {
 		// remove complete lines in reverse order to avoid index shift issues.
 		for i := len(lines) - 1; i >= 0; i-- {
