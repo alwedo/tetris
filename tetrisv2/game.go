@@ -107,7 +107,7 @@ type Game struct {
 
 // Start() starts a new Tetris Game.
 func Start(ctx context.Context, opts ...GameOpts) *Game {
-	uCh := make(chan GameMessage)
+	uCh := make(chan GameMessage, 1)
 	aCh := make(chan Command)
 
 	g := &Game{
@@ -119,6 +119,10 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 	for _, o := range opts {
 		o(g)
 	}
+
+	// we send a first read to the channel so
+	// there is no delay on viewing the first piece.
+	uCh <- GameMessage{Tetris: g.tetris.read()}
 
 	// Ticker goroutine
 	go func() {

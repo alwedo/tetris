@@ -18,6 +18,7 @@ func TestStart(t *testing.T) {
 			game := Start(t.Context(), WithCustomTicker(mockTicker))
 			wantTetrominoPos := game.tetris.Tetromino.Y - 1
 
+			<-game.GameMessageCh // skip first message to render stack
 			var wg sync.WaitGroup
 			wg.Go(func() {
 				msg := <-game.GameMessageCh
@@ -42,6 +43,7 @@ func TestStart(t *testing.T) {
 			mockTicker := tetristest.NewMockTicker()
 			game := Start(t.Context(), WithCustomTicker(mockTicker))
 
+			<-game.GameMessageCh // skip first message to render stack
 			var wg sync.WaitGroup
 			wg.Go(func() {
 				<-game.GameMessageCh
@@ -70,6 +72,7 @@ func TestStart(t *testing.T) {
 				WithCustomShape(I),
 			)
 
+			<-game.GameMessageCh // skip first message to render stack
 			var wg sync.WaitGroup
 			wg.Go(func() {
 				for {
@@ -87,7 +90,7 @@ func TestStart(t *testing.T) {
 				}
 			})
 
-			time.AfterFunc(time.Millisecond, func() { game.Do(DropDown()) })
+			game.Do(DropDown())
 			time.Sleep(time.Millisecond) // sleep until the next tick
 			cancel()                     // quit the game
 			wg.Wait()

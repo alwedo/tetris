@@ -238,7 +238,7 @@ func (t *Tetris) finishRound(lines []int) bool {
 	if len(lines) > 0 {
 		// remove complete lines in reverse order to avoid index shift issues.
 		for i := len(lines) - 1; i >= 0; i-- {
-			t.Stack = slices.Delete(t.Stack, i, i+1)
+			t.Stack = slices.Delete(t.Stack, lines[i], lines[i]+1)
 			t.Stack = append(t.Stack, make([]Shape, 10))
 		}
 		t.Lines += len(lines)
