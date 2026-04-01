@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"fmt"
 	"image/color"
 	"slices"
 	"strings"
@@ -35,6 +36,7 @@ func (m *GameModel) Init() tea.Cmd {
 	m.cancelCtx = cancel
 	m.ctx = ctx
 	m.gameInstance = tetris.Start(ctx)
+	m.help.SetWidth(22)
 
 	return m.listenToGameUpdates(ctx)
 }
@@ -77,7 +79,7 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		case key.Matches(msg, m.keys.Quit):
 			m.cancelCtx()
 			return m, func() tea.Msg {
-				return BackToLobbyMsg{Reason: "user_quit"}
+				return BackToLobbyMsg{localGameState: m.gameState}
 			}
 		case key.Matches(msg, m.keys.MoveLeft):
 			m.gameInstance.Do(tetris.MoveLeft())
@@ -102,47 +104,23 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 var emptyRow = []string{"  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "}
 
 func (m *GameModel) View() tea.View {
-	stack := make([][]string, 20)
-	for i := range stack {
-		stack[i] = slices.Clone(emptyRow)
-	}
+	stack := renderStack(m.gameState.Tetris)
 
-	if len(m.gameState.Tetris.Stack) > 0 {
-		for y := range 20 {
-			for x := range 10 {
-				c, ok := colorMap[m.gameState.Tetris.Stack[y][x]]
-				if ok {
-					stack[19-y][x] = lipgloss.NewStyle().Background(c).Render("[]")
-				}
-			}
-		}
-	}
+	gameName := lipgloss.NewStyle().Bold(true).Render(appName)
+	nextPiece := renderNextPiece(m.gameState.Tetris)
 
-	if m.gameState.Tetris.Tetromino != nil {
-		for iy, y := range m.gameState.Tetris.Tetromino.Grid {
-			for ix, x := range y {
-				if x {
-					// if !t.NoGhost { // TODO: enable ghostpiece
-					stack[19-m.gameState.Tetris.Tetromino.GhostY+iy][m.gameState.Tetris.Tetromino.X+ix] = "[]"
-					// }
-					stack[19-m.gameState.Tetris.Tetromino.Y+iy][m.gameState.Tetris.Tetromino.X+ix] = lipgloss.NewStyle().Background(colorMap[m.gameState.Tetris.Tetromino.Shape]).Render("[]")
-				}
-			}
-		}
-	}
+	stats := lipgloss.NewStyle().Width(22).Align(lipgloss.Center).
+		Border(lipgloss.RoundedBorder()).Render(lipgloss.JoinVertical(lipgloss.Center,
+		gameName, fmt.Sprintf("Level: %d\nLines Cleared: %d\n", m.gameState.Tetris.Level, m.gameState.Tetris.Lines), nextPiece,
+	))
 
-	rows := []string{}
-	for _, row := range stack {
-		rows = append(rows, strings.Join(row, ""))
-
-	}
+	help := lipgloss.NewStyle().Width(22).Align(lipgloss.Center).
+		Border(lipgloss.RoundedBorder()).
+		Foreground(lipgloss.Color("#FF75B7")).Render(m.help.View(m.keys))
+	centerPiece := lipgloss.JoinVertical(lipgloss.Center, stats, help)
 
 	return tea.NewView(
-		lipgloss.NewStyle().
-			Border(lipgloss.RoundedBorder()).
-			Render(lipgloss.JoinVertical(lipgloss.Center, rows...)) + "\n" +
-			lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
-				Foreground(lipgloss.Color("#FF75B7")).Render(m.help.View(m.keys)),
+		lipgloss.JoinHorizontal(lipgloss.Bottom, stack, centerPiece),
 	)
 }
 
@@ -152,12 +130,12 @@ func (m *GameModel) listenToGameUpdates(ctx context.Context) tea.Cmd {
 			select {
 			case msg, ok := <-m.gameInstance.GameMessageCh:
 				if !ok {
-					return BackToLobbyMsg{Reason: "game_ended"}
+					return BackToLobbyMsg{localGameState: m.gameState}
 				}
 				return msg
 
 			case <-ctx.Done():
-				return BackToLobbyMsg{Reason: "context_cancelled"}
+				return BackToLobbyMsg{localGameState: m.gameState}
 			}
 		}
 	}
@@ -185,4 +163,65 @@ var colorMap = map[tetris.Shape]color.Color{
 	tetris.S: lipgloss.Color("#53DA3F"), // green
 	tetris.Z: lipgloss.Color("#EA141C"), // red
 	tetris.T: lipgloss.Color("#DD0AB2"), // magenta
+}
+
+// renderStack returns a rounded background with the
+// stack and tetrominos rendered. It returns an empty
+// rounded stack of the right dimensions when t is empty.
+func renderStack(t tetris.Tetris) string {
+	stack := make([][]string, 20)
+	for i := range stack {
+		stack[i] = slices.Clone(emptyRow)
+	}
+
+	if len(t.Stack) > 0 {
+		for y := range 20 {
+			for x := range 10 {
+				c, ok := colorMap[t.Stack[y][x]]
+				if ok {
+					stack[19-y][x] = lipgloss.NewStyle().Background(c).Render("[]")
+				}
+			}
+		}
+	}
+
+	if t.Tetromino != nil {
+		for iy, y := range t.Tetromino.Grid {
+			for ix, x := range y {
+				if x {
+					// if !t.NoGhost { // TODO: enable ghostpiece
+					stack[19-t.Tetromino.GhostY+iy][t.Tetromino.X+ix] = "[]"
+					// }
+					stack[19-t.Tetromino.Y+iy][t.Tetromino.X+ix] = lipgloss.NewStyle().Background(colorMap[t.Tetromino.Shape]).Render("[]")
+				}
+			}
+		}
+	}
+
+	rows := []string{}
+	for _, row := range stack {
+		rows = append(rows, strings.Join(row, ""))
+
+	}
+
+	return lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		Render(lipgloss.JoinVertical(lipgloss.Center, rows...))
+}
+
+func renderNextPiece(t tetris.Tetris) string {
+	var rendered []string
+	for i := range 2 {
+		row := []string{"  ", "  ", "  ", "  "}
+		if t.NextTetromino != nil && len(t.NextTetromino.Grid) > 0 {
+			for iv, v := range t.NextTetromino.Grid[i] {
+				if v {
+					row[iv] = lipgloss.NewStyle().Background(colorMap[t.NextTetromino.Shape]).Render("[]")
+				}
+			}
+		}
+		rendered = append(rendered, strings.Join(row, ""))
+	}
+
+	return lipgloss.JoinVertical(lipgloss.Center, rendered...)
 }

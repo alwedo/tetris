@@ -2,6 +2,7 @@ package client
 
 import (
 	tea "charm.land/bubbletea/v2"
+	tetris "github.com/alwedo/tetris/tetrisv2"
 )
 
 const appName = "Terminal Tetris"
@@ -9,7 +10,7 @@ const appName = "Terminal Tetris"
 type PlayGameMsg struct{}
 
 type BackToLobbyMsg struct {
-	Reason string
+	localGameState tetris.GameMessage
 }
 
 type ClientModel struct {
@@ -46,6 +47,7 @@ func (m *ClientModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case BackToLobbyMsg:
 		m.currentModel = m.lobbyModel
+		m.lobbyModel.localGameState = msg.localGameState
 		return m, m.currentModel.Init()
 	}
 

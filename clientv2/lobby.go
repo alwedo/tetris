@@ -4,20 +4,28 @@ import (
 	"fmt"
 	"strings"
 
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
+	tetris "github.com/alwedo/tetris/tetrisv2"
 )
 
 // LobbyModel represents the game mode selection lobby screen
 type LobbyModel struct {
-	selectedMode int
-	gameModes    []string
+	selectedMode   int
+	gameModes      []string
+	keys           lobbyKeyMap
+	help           help.Model
+	localGameState tetris.GameMessage
 }
 
 func NewLobbyModel() LobbyModel {
 	return LobbyModel{
 		selectedMode: 0,
-		gameModes:    []string{"Single Player", "Multiplayer", "Quit"},
+		gameModes:    []string{"Single Player", "Multiplayer"},
+		keys:         lobbyKeys,
+		help:         help.New(),
 	}
 }
 
@@ -28,30 +36,27 @@ func (m LobbyModel) Init() tea.Cmd {
 func (m LobbyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		case "up", "k":
+		switch {
+		case key.Matches(msg, m.keys.Up):
 			if m.selectedMode > 0 {
 				m.selectedMode--
 			}
-			return m, nil
-
-		case "down", "j":
+		case key.Matches(msg, m.keys.Down):
 			if m.selectedMode < len(m.gameModes)-1 {
 				m.selectedMode++
 			}
-			return m, nil
-
-		case "enter", " ":
+		case key.Matches(msg, m.keys.Quit):
+			return m, tea.Quit
+		case key.Matches(msg, m.keys.Help):
+			m.help.ShowAll = !m.help.ShowAll
+		case key.Matches(msg, m.keys.Select):
 			gameMode := m.gameModes[m.selectedMode]
-			if gameMode == "Quit" || gameMode == "Multiplayer" {
+			if gameMode == "Multiplayer" {
 				return m, tea.Quit
 			}
 			return m, func() tea.Msg {
 				return PlayGameMsg{}
 			}
-
-		case "esc": // TODO: change to esc
-			return m, tea.Quit
 		}
 	}
 
@@ -60,20 +65,20 @@ func (m LobbyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 // View renders the lobby screen
 func (m LobbyModel) View() tea.View {
-	content := strings.Builder{}
+	localGame := renderStack(m.localGameState.Tetris)
+
+	gameName := lipgloss.NewStyle().Bold(true).Render(appName)
+	controls := strings.Builder{}
 
 	for i, mode := range m.gameModes {
 		if i == m.selectedMode {
-			content.WriteString(fmt.Sprintf("> [%s] <\n", mode))
+			controls.WriteString(fmt.Sprintf("> [%s] <\n", mode))
 		} else {
-			content.WriteString(fmt.Sprintf("  %s\n", mode))
+			controls.WriteString(fmt.Sprintf("  %s\n", mode))
 		}
 	}
 
-	content.WriteString("\n\nControls:\n  ↑/k - Move Up\n  ↓/j - Move Down\n  ENTER/SPACE - Play\n  q - Quit\n")
+	menu := lipgloss.JoinVertical(lipgloss.Center, gameName, "\n", controls.String(), m.help.View(m.keys))
 
-	return tea.NewView(lipgloss.NewStyle().
-		Width(66).
-		Height(22).
-		Border(lipgloss.RoundedBorder()).Render(content.String()))
+	return tea.NewView(lipgloss.JoinHorizontal(lipgloss.Bottom, localGame, menu))
 }
