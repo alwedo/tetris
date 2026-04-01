@@ -48,7 +48,7 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 	var opponentCh chan *pb.GameMessage
 
 	// The new game setup sequence happens under mutex lock to prevent
-	// multiple concurrent connections reading the wating list as nil.
+	// multiple concurrent connections reading the waiting list as nil.
 	t.mu.Lock()
 	switch t.waitList.Load() {
 	case nil:
@@ -85,7 +85,7 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 		default:
 			continue
 		}
-		t.waitList.Swap(nil)
+		t.waitList.CompareAndSwap(gameInstance, nil)
 		return status.Error(code, msg)
 	}
 
@@ -125,7 +125,7 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 			}
 		case <-stream.Context().Done():
 			log.Printf("%s disconnected from game %p", name, gameInstance)
-			return status.Errorf(codes.Canceled, "context canceled %s: %v", name, err)
+			return status.Errorf(codes.Canceled, "context canceled %s: %v", name, stream.Context().Err())
 		}
 	}
 }

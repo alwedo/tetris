@@ -26,7 +26,6 @@ func TestPlayTetris(t *testing.T) {
 		var wg sync.WaitGroup
 		for i := range 10 {
 			wg.Go(func() { testPlayer(t, i+1, lis) })
-			// go func() { testPlayer(t, i+1, lis); wg.Done() }()
 		}
 		wg.Wait()
 	})
@@ -57,7 +56,7 @@ func TestPlayTetris(t *testing.T) {
 			t.Errorf("expected DeadlineExceeded with message 'timeout waiting for opponent', got %v", err)
 		}
 		if server.waitList.Load() != nil {
-			t.Errorf("expected waitListID pointer to be nil, got %p", server.waitList.Load)
+			t.Errorf("expected waitListID pointer to be nil, got %p", server.waitList.Load())
 		}
 	})
 
@@ -89,7 +88,7 @@ func TestPlayTetris(t *testing.T) {
 		}
 		time.Sleep(50 * time.Millisecond)
 		if server.waitList.Load() != nil {
-			t.Errorf("expected waitListID pointer to be nil, got %p", server.waitList.Load)
+			t.Errorf("expected waitListID pointer to be nil, got %p", server.waitList.Load())
 		}
 	})
 }
@@ -165,12 +164,10 @@ func testPlayer(t *testing.T, n int, lis *bufconn.Listener) {
 		gm, err := game.Recv()
 		if err != nil && !errors.Is(err, io.EOF) {
 			t.Errorf("error receiving message from opponent for P%d: %v", n, err)
-			// return
 		}
 		if i != 49 {
 			if gm.GetLinesClear() != int32(i) { // nolint:gosec
 				t.Errorf("expected %d lines cleared for player%d, got %d", i, n, gm.GetLinesClear())
-				// return
 			}
 		}
 		if gm.GetIsGameOver() {
