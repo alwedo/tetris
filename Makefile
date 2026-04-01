@@ -16,10 +16,10 @@ lint:
 
 run-tetris: mod
 	@go run cmd/client/main.go
-	
+
 tetris-version: mod
 	@go run cmd/client/main.go -version
-    
+
 build-tetris: mod
 	@CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o ./bin/tetris ./cmd/client/main.go
 	@chmod +x ./bin/tetris
