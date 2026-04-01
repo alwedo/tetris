@@ -3,6 +3,7 @@ package client
 import (
 	"context"
 	"image/color"
+	"slices"
 	"strings"
 	"time"
 
@@ -37,6 +38,10 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if msg.frames == 0 {
 			return m, m.listenToGameUpdates(m.ctx)
 		}
+		// we want the animation to skip rendering the tetromino
+		if m.gameState.Tetris.Tetromino != nil {
+			m.gameState.Tetris.Tetromino = nil
+		}
 		for k, v := range msg.completedRows {
 			if msg.frames%2 == 0 {
 				m.gameState.Tetris.Stack[k] = make([]tetris.Shape, 10)
@@ -54,14 +59,9 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(m.gameState.ClearedLines) > 0 {
 			complete := make(map[int][]tetris.Shape)
 			for _, v := range msg.ClearedLines {
-				complete[v] = m.gameState.Tetris.Stack[v]
+				complete[v] = msg.Tetris.Stack[v]
 			}
-			return m, func() tea.Msg {
-				return AnimationMessage{
-					frames:        8,
-					completedRows: complete,
-				}
-			}
+			return m, newAnimationMsg(complete)
 		}
 		return m, m.listenToGameUpdates(m.ctx)
 
@@ -103,41 +103,34 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	return m, nil
 }
 
-func (m *GameModel) View() tea.View {
-	if m.gameState.Tetris.Tetromino == nil {
-		return tea.NewView(lipgloss.NewStyle().
-			Width(22).
-			Height(22).
-			Border(lipgloss.NormalBorder()).
-			Render(),
-		)
-	}
+var emptyRow = []string{"  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  ", "  "}
 
+func (m *GameModel) View() tea.View {
 	stack := make([][]string, 20)
 	for i := range stack {
-		stack[i] = make([]string, 10)
+		stack[i] = slices.Clone(emptyRow)
 	}
 
-	for y := range 20 {
-		for x := range 10 {
-			out := "  "
-
-			v := m.gameState.Tetris.Stack[y][x]
-			c, ok := colorMap[v]
-			if ok {
-				out = lipgloss.NewStyle().Background(c).Render("[]")
+	if len(m.gameState.Tetris.Stack) > 0 {
+		for y := range 20 {
+			for x := range 10 {
+				c, ok := colorMap[m.gameState.Tetris.Stack[y][x]]
+				if ok {
+					stack[19-y][x] = lipgloss.NewStyle().Background(c).Render("[]")
+				}
 			}
-			stack[19-y][x] = out
 		}
 	}
 
-	for iy, y := range m.gameState.Tetris.Tetromino.Grid {
-		for ix, x := range y {
-			if x {
-				// if !t.NoGhost { // TODO: enable ghostpiece
-				stack[19-m.gameState.Tetris.Tetromino.GhostY+iy][m.gameState.Tetris.Tetromino.X+ix] = "[]"
-				// }
-				stack[19-m.gameState.Tetris.Tetromino.Y+iy][m.gameState.Tetris.Tetromino.X+ix] = lipgloss.NewStyle().Background(colorMap[m.gameState.Tetris.Tetromino.Shape]).Render("[]")
+	if m.gameState.Tetris.Tetromino != nil {
+		for iy, y := range m.gameState.Tetris.Tetromino.Grid {
+			for ix, x := range y {
+				if x {
+					// if !t.NoGhost { // TODO: enable ghostpiece
+					stack[19-m.gameState.Tetris.Tetromino.GhostY+iy][m.gameState.Tetris.Tetromino.X+ix] = "[]"
+					// }
+					stack[19-m.gameState.Tetris.Tetromino.Y+iy][m.gameState.Tetris.Tetromino.X+ix] = lipgloss.NewStyle().Background(colorMap[m.gameState.Tetris.Tetromino.Shape]).Render("[]")
+				}
 			}
 		}
 	}
@@ -150,7 +143,7 @@ func (m *GameModel) View() tea.View {
 
 	return tea.NewView(
 		lipgloss.NewStyle().
-			Border(lipgloss.NormalBorder()).
+			Border(lipgloss.RoundedBorder()).
 			Render(lipgloss.JoinVertical(lipgloss.Center, rows...)),
 	)
 }
@@ -175,6 +168,15 @@ func (m *GameModel) listenToGameUpdates(ctx context.Context) tea.Cmd {
 type AnimationMessage struct {
 	frames        int
 	completedRows map[int][]tetris.Shape
+}
+
+func newAnimationMsg(c map[int][]tetris.Shape) tea.Cmd {
+	return func() tea.Msg {
+		return AnimationMessage{
+			frames:        8, // TODO: move to constant?
+			completedRows: c,
+		}
+	}
 }
 
 var colorMap = map[tetris.Shape]color.Color{
