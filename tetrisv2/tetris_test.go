@@ -3,13 +3,14 @@ package tetris
 import (
 	"fmt"
 	"reflect"
+	"sync"
 	"testing"
 )
 
 func newTestTetris(shape Shape) *Tetris {
 	t := newTetris()
 	t.Tetromino = shapeMap[shape]()
-	t.NexTetromino = shapeMap[shape]()
+	t.NextTetromino = shapeMap[shape]()
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 	return t
 }
@@ -46,22 +47,22 @@ func TestIsCollision(t *testing.T) {
 			wantCollision: true,
 		},
 		{
-			name:          "left bond collision",
+			name:          "left bound collision",
 			deltaX:        -4,
 			wantCollision: true,
 		},
 		{
-			name:          "right bond collision",
+			name:          "right bound collision",
 			deltaX:        5,
 			wantCollision: true,
 		},
 		{
-			name:          "bottom bond collision",
+			name:          "bottom bound collision",
 			deltaY:        -19,
 			wantCollision: true,
 		},
 		{
-			name: "upper bond collision",
+			name: "upper bound collision",
 			// when drafting an I and rotating it immediately, it
 			// should put the tetromino out of the upper bond.
 			// the collision should allow for a wall-kick.
@@ -97,19 +98,20 @@ func TestMoveActions(t *testing.T) {
 	// 17	X X X X X X X X X X		2	X X X
 	tests := []struct {
 		name         string
-		command      Command
+		action       action
 		updateStack  func(g *Tetris)
 		wantGrid     [][]bool
 		wantLocation []int // x, y
+		wantEndRound bool
 	}{
 		{
 			name:         "Move left unblocked",
-			command:      MoveLeft(),
+			action:       moveLeft,
 			wantLocation: []int{19, 2},
 		},
 		{
-			name:    "Move left blocked",
-			command: MoveLeft(),
+			name:   "Move left blocked",
+			action: moveLeft,
 			updateStack: func(g *Tetris) {
 				g.Stack[18][2] = J
 			},
@@ -117,12 +119,12 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Move right unblocked",
-			command:      MoveRight(),
+			action:       moveRight,
 			wantLocation: []int{19, 4},
 		},
 		{
-			name:    "Move right blocked",
-			command: MoveRight(),
+			name:   "Move right blocked",
+			action: moveRight,
 			updateStack: func(g *Tetris) {
 				g.Stack[18][6] = J
 			},
@@ -130,25 +132,27 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Move down unblocked",
-			command:      MoveDown(),
+			action:       moveDown,
 			wantLocation: []int{18, 3},
 		},
 		{
-			name:    "Move down blocked",
-			command: MoveDown(),
+			name:   "Move down blocked",
+			action: moveDown,
 			updateStack: func(g *Tetris) {
 				g.Stack[17][3] = J
 			},
 			wantLocation: []int{19, 3},
+			wantEndRound: true,
 		},
 		{
 			name:         "Drop moves down until blocked",
-			command:      DropDown(),
+			action:       dropDown,
 			wantLocation: []int{1, 3},
+			wantEndRound: true,
 		},
 		{
 			name:         "Rotate right when unblocked",
-			command:      RotateRight(),
+			action:       rotateRight,
 			wantLocation: []int{19, 3},
 			wantGrid: [][]bool{
 				{false, true, true},
@@ -158,7 +162,7 @@ func TestMoveActions(t *testing.T) {
 		},
 		{
 			name:         "Rotate left when unblocked",
-			command:      RotateLeft(),
+			action:       rotateLeft,
 			wantLocation: []int{19, 3},
 			wantGrid: [][]bool{
 				{false, true, false},
@@ -175,7 +179,7 @@ func TestMoveActions(t *testing.T) {
 			if tt.updateStack != nil {
 				tt.updateStack(tetris)
 			}
-			tt.command(tetris)
+			gotEndRound := tetris.action(tt.action)
 			if tetris.Tetromino.Y != tt.wantLocation[0] {
 				t.Errorf("wanted tetromino's Y to be %d, got %d", tt.wantLocation[0], tetris.Tetromino.Y)
 			}
@@ -187,6 +191,9 @@ func TestMoveActions(t *testing.T) {
 					t.Errorf("wanted %v, got %v", tt.wantGrid, tetris.Tetromino.Grid)
 				}
 			}
+			if tt.wantEndRound != gotEndRound {
+				t.Errorf("wanted end round to be %t, got %t", gotEndRound, tt.wantEndRound)
+			}
 		})
 	}
 }
@@ -194,11 +201,11 @@ func TestMoveActions(t *testing.T) {
 func TestWallKick(t *testing.T) {
 	// for this test we set the tetromino in the middle of the stack to
 	// allow for setting up multiple blocks in order to test all the cases.
-	// we don't test for case 0 (0,0) since that donesn't wall kick.
+	// we don't test for case 0 (0,0) since that doesn't wall kick.
 	tests := []struct {
 		name         string
 		shape        Shape
-		command      Command
+		action       action
 		blockStack   [][]int
 		setR         func(g *Tetris)
 		wantX, wantY int
@@ -209,7 +216,7 @@ func TestWallKick(t *testing.T) {
 			// 10	. . . . . X . . . .
 			// 9	. . . O O O O . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{10, 5}},
 			wantX:      1,
 			wantY:      10,
@@ -220,7 +227,7 @@ func TestWallKick(t *testing.T) {
 			// 10	. . . X . X . . . .
 			// 9	. . . O O O O . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{10, 5}, {10, 3}},
 			wantX:      4,
 			wantY:      10,
@@ -232,7 +239,7 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . O O O O . . .
 			// 8	. . . . . . X . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 6}, {10, 5}, {10, 3}},
 			wantX:      1,
 			wantY:      9,
@@ -244,7 +251,7 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . O O O O . . .
 			// 8	. . . X . . X . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}, {10, 5}, {10, 3}},
 			wantX:      4,
 			wantY:      12,
@@ -256,12 +263,12 @@ func TestWallKick(t *testing.T) {
 			// 9	O . . . . . . . . .
 			// 8	O . . . . . . . . .
 			// 7    O . . . . . . . . .
-			shape:   I,
-			command: RotateLeft(),
+			shape:  I,
+			action: rotateLeft,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the left wall
 				t.Tetromino.X = -2
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 0,
 			wantY: 10,
@@ -273,12 +280,12 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . . . . . . . O
 			// 8	. . . . . . . . . O
 			// 7    . . . . . . . . . O
-			shape:   I,
-			command: RotateLeft(),
+			shape:  I,
+			action: rotateLeft,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the right wall
 				t.Tetromino.X = 7
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 6,
 			wantY: 10,
@@ -291,9 +298,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . . . O . . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 3}, {9, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      5,
 			wantY:      11,
 		},
@@ -305,9 +312,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . . . O . . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 3}, {9, 6}, {10, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      2,
 			wantY:      8,
 		},
@@ -318,12 +325,12 @@ func TestWallKick(t *testing.T) {
 			// 9	. . . . . . . . . O
 			// 8	. . . . . . . . . O
 			// 7    . . . . . . . . . O
-			shape:   I,
-			command: RotateRight(),
+			shape:  I,
+			action: rotateRight,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the right wall
 				t.Tetromino.X = 7
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 6,
 			wantY: 10,
@@ -335,12 +342,12 @@ func TestWallKick(t *testing.T) {
 			// 9	O . . . . . . . . .
 			// 8	O . . . . . . . . .
 			// 7    O . . . . . . . . .
-			shape:   I,
-			command: RotateRight(),
+			shape:  I,
+			action: rotateRight,
 			setR: func(t *Tetris) {
 				// for this case we put the tetromino against the left wall
 				t.Tetromino.X = -2
-				RotateRight()(t)
+				t.action(rotateRight)
 			},
 			wantX: 0,
 			wantY: 10,
@@ -353,9 +360,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . X . O X . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      2,
 			wantY:      12,
 		},
@@ -367,9 +374,9 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . X . O X . . .
 			// 7    . . . . . O . . . .
 			shape:      I,
-			command:    RotateRight(),
+			action:     rotateRight,
 			blockStack: [][]int{{8, 3}, {8, 6}, {10, 3}},
-			setR:       func(t *Tetris) { RotateRight()(t) },
+			setR:       func(t *Tetris) { t.action(rotateRight) },
 			wantX:      5,
 			wantY:      9,
 		},
@@ -381,11 +388,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . . . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 4,
 			wantY: 10,
@@ -398,11 +405,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . . . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 1,
 			wantY: 10,
@@ -415,11 +422,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . X . . . . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}, {7, 3}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 4,
 			wantY: 8,
@@ -432,11 +439,11 @@ func TestWallKick(t *testing.T) {
 			// 8	. . . O O O O . . .
 			// 7    . . . X . . X . . .
 			shape:      I,
-			command:    RotateLeft(),
+			action:     rotateLeft,
 			blockStack: [][]int{{9, 5}, {9, 6}, {7, 3}, {7, 6}},
 			setR: func(t *Tetris) {
-				RotateRight()(t)
-				RotateRight()(t)
+				t.action(rotateRight)
+				t.action(rotateRight)
 			},
 			wantX: 1,
 			wantY: 11,
@@ -455,7 +462,7 @@ func TestWallKick(t *testing.T) {
 					tetris.Stack[v[0]][v[1]] = J
 				}
 			}
-			tt.command(tetris)
+			tetris.action(tt.action)
 			if tt.wantX != tetris.Tetromino.X {
 				t.Errorf("wanted X to be %d, got %d", tt.wantX, tetris.Tetromino.X)
 			}
@@ -467,27 +474,29 @@ func TestWallKick(t *testing.T) {
 }
 
 func TestToStack(t *testing.T) {
-	tetris := newTestTetris(J)
-	tetris.toStack()
+	t.Run("moves the tetromino to the stack", func(t *testing.T) {
+		tetris := newTestTetris(J)
+		gotLines := tetris.toStack()
 
-	wantStack := [][]int{{19, 3}, {18, 3}, {18, 4}, {18, 5}}
-	for _, ws := range wantStack {
-		if tetris.Stack[ws[0]][ws[1]] != J {
-			t.Errorf("wanted stack %v to be J, got %v", ws, tetris.Stack[ws[0]][ws[1]])
+		wantStack := [][]int{{19, 3}, {18, 3}, {18, 4}, {18, 5}}
+		for _, ws := range wantStack {
+			if tetris.Stack[ws[0]][ws[1]] != J {
+				t.Errorf("wanted stack %v to be J, got %v", ws, tetris.Stack[ws[0]][ws[1]])
+			}
 		}
-	}
-	if len(tetris.LinesClearedIndex) != 0 {
-		t.Errorf("wanted empty LinesClearedIndex, got %d", len(tetris.LinesClearedIndex))
-	}
+		if len(gotLines) != 0 {
+			t.Errorf("wanted empty LinesClearedIndex, got %d", len(gotLines))
+		}
+	})
 
 	t.Run("toStack will fill LinesClearedIndex if any", func(t *testing.T) {
 		tetris := newTetris()
 		for i := range tetris.Stack[0] {
 			tetris.Stack[0][i] = I
 		}
-		tetris.toStack()
-		if len(tetris.LinesClearedIndex) != 1 {
-			t.Errorf("expected 1 line to be cleared, got %d", len(tetris.LinesClearedIndex))
+		gotLines := tetris.toStack()
+		if len(gotLines) != 1 {
+			t.Errorf("expected 1 line to be cleared, got %d", len(gotLines))
 		}
 	})
 }
@@ -495,8 +504,8 @@ func TestToStack(t *testing.T) {
 func TestFinishRound(t *testing.T) {
 	t.Run("it rotates the tetrominoes", func(t *testing.T) {
 		tetris := newTetris()
-		wantTetrominoShape := tetris.NexTetromino.Shape
-		tetris.finishRound()
+		wantTetrominoShape := tetris.NextTetromino.Shape
+		tetris.finishRound(nil)
 		if tetris.Tetromino.Shape != wantTetrominoShape {
 			t.Errorf("wanted current tetromino to be %s, got %s", wantTetrominoShape, tetris.Tetromino.Shape)
 		}
@@ -505,14 +514,13 @@ func TestFinishRound(t *testing.T) {
 	t.Run("it removes completed lines from the stack", func(t *testing.T) {
 		tetris := newTetris()
 		index := 1
-		tetris.LinesClearedIndex = []int{index}
 
 		// set a complete line to be cleared
 		for i := range tetris.Stack[index] {
 			tetris.Stack[index][i] = I
 		}
 
-		tetris.finishRound()
+		tetris.finishRound([]int{index})
 		for i := range tetris.Stack[index] {
 			if tetris.Stack[index][i] != "" {
 				t.Errorf("wanted Stack[0][%d] to be empty, got %s", i, tetris.Stack[index][i])
@@ -520,15 +528,11 @@ func TestFinishRound(t *testing.T) {
 		}
 	})
 
-	t.Run("increases the number of lines and cleares LinesClearedIndex", func(t *testing.T) {
+	t.Run("increases the number of lines and clears LinesClearedIndex", func(t *testing.T) {
 		tetris := newTetris()
-		tetris.LinesClearedIndex = []int{1, 2}
-		tetris.finishRound()
+		tetris.finishRound([]int{1, 2})
 		if tetris.Lines != 2 {
 			t.Errorf("wanted 2 lines cleared, got %d", tetris.Lines)
-		}
-		if tetris.LinesClearedIndex != nil {
-			t.Errorf("wanted LinesClearedIndex to be nil, got %v", tetris.LinesClearedIndex)
 		}
 	})
 
@@ -549,9 +553,8 @@ func TestFinishRound(t *testing.T) {
 		for _, tt := range tests {
 			t.Run(fmt.Sprintf("for %d lines should have level %d", tt.lines, tt.wantLevel), func(t *testing.T) {
 				tetris := newTetris()
-				tetris.LinesClearedIndex = []int{1} // set level only happens when there are lines to be cleared.
-				tetris.Lines = tt.lines - 1         // we remove one line to offset for the LinesClearedIndex above.
-				tetris.finishRound()
+				tetris.Lines = tt.lines - 1  // we remove one line to offset for the LinesClearedIndex above.
+				tetris.finishRound([]int{1}) // set level only happens when there are lines to be cleared.
 				if tetris.Level != tt.wantLevel {
 					t.Errorf("wanted level %d, got %d", tt.wantLevel, tetris.Level)
 				}
@@ -560,15 +563,13 @@ func TestFinishRound(t *testing.T) {
 
 		t.Run("set level is not overriden until lines > level", func(t *testing.T) {
 			tetris := newTetris()
-			tetris.LinesClearedIndex = []int{1}
 			tetris.Level = 5
-			tetris.finishRound()
+			tetris.finishRound([]int{1})
 			if tetris.Level != 5 {
 				t.Errorf("wanted level 5, got %d", tetris.Level)
 			}
-			tetris.LinesClearedIndex = []int{1}
 			tetris.Lines = 49
-			tetris.finishRound()
+			tetris.finishRound([]int{1})
 			if tetris.Level != 6 {
 				t.Errorf("wanted level 6, got %d", tetris.Level)
 			}
@@ -578,16 +579,23 @@ func TestFinishRound(t *testing.T) {
 
 func TestRead(t *testing.T) {
 	tetris := newTestTetris(J)
-	MoveDown()(tetris)
-	if reflect.DeepEqual(tetris, tetris.read()) {
-		t.Errorf("tetris and tetris.read() content should be equal. wanted %v, got %v", tetris, tetris.read())
-	}
+	tetris.action(dropDown)
+	tetris.toStack()
 	got := tetris.read()
+	if tetris.Tetromino.Shape != got.Tetromino.Shape {
+		t.Errorf("wanted tetromino shape to be %s, got %s", tetris.Tetromino.Shape, got.Tetromino.Shape)
+	}
 	if tetris.Tetromino == got.Tetromino {
 		t.Errorf("tetrominos' pointers should be different. wanted %p, got %p", tetris.Tetromino, got.Tetromino)
 	}
-	if tetris.NexTetromino == got.NexTetromino {
-		t.Errorf("next tetrominos' pointers should be different. wanted %p, got %p", tetris.NexTetromino, got.NexTetromino)
+	if tetris.NextTetromino.Shape != got.NextTetromino.Shape {
+		t.Errorf("wanted next tetromino shape to be %s, got %s", tetris.NextTetromino.Shape, got.NextTetromino.Shape)
+	}
+	if tetris.NextTetromino == got.NextTetromino {
+		t.Errorf("next tetrominos' pointers should be different. wanted %p, got %p", tetris.NextTetromino, got.NextTetromino)
+	}
+	if !reflect.DeepEqual(got.Stack, tetris.Stack) {
+		t.Errorf("Stack content should be equal. wanted %v, got %v", tetris.Stack, got.Stack)
 	}
 }
 
@@ -603,18 +611,20 @@ func TestRandomBag(t *testing.T) {
 
 	t.Run("first draw should always be I, J, L or T", func(t *testing.T) {
 		t.Parallel()
-		for range 10 {
-			go func() {
+		var wg = sync.WaitGroup{}
+		for range 20 {
+			wg.Go(func() {
 				bag := newBag()
 				tetromino := bag.draw()
 				if tetromino.Shape == O || tetromino.Shape == Z || tetromino.Shape == S {
 					t.Errorf("wanted I, J, L, or T, got %v", tetromino.Shape)
 				}
-			}()
+			})
 		}
+		wg.Wait()
 	})
 
-	t.Run("after drawing 7 tetrominos the bag should empty. next draw whould replenish it", func(t *testing.T) {
+	t.Run("after drawing 7 tetrominos the bag should empty. next draw would replenish it", func(t *testing.T) {
 		t.Parallel()
 		bag := newBag()
 		for range 7 {
@@ -634,29 +644,29 @@ func TestSetTetromino(t *testing.T) {
 	t.Run("first time it populates current and next tetromino", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.setTetromino()
-		if tetris.Tetromino == nil || tetris.NexTetromino == nil {
-			t.Errorf("want Tetromino and NextTetromino to not be nil, got: %v, %v", tetris.Tetromino, tetris.NexTetromino)
+		if tetris.Tetromino == nil || tetris.NextTetromino == nil {
+			t.Errorf("want Tetromino and NextTetromino to not be nil, got: %v, %v", tetris.Tetromino, tetris.NextTetromino)
 		}
 	})
 	t.Run("after tetromino has been transferred to the stack, moves next tetromino to current", func(t *testing.T) {
 		tetris := newTetris()
-		DropDown()(tetris)
+		tetris.action(dropDown)
 		tetris.toStack()
-		wantShape := tetris.NexTetromino.Shape
-		tetris.setTetromino()
+		wantShape := tetris.NextTetromino.Shape
+		isGameOver := tetris.setTetromino()
 		if tetris.Tetromino.Shape != wantShape {
 			t.Errorf("wanted current tetromino to have shape %v, got %v", wantShape, tetris.Tetromino.Shape)
 		}
-		if tetris.GameOver {
-			t.Errorf("wanted GameOver to be false, got %v", tetris.GameOver)
+		if isGameOver {
+			t.Errorf("wanted GameOver to be false, got %v", isGameOver)
 		}
 	})
 	t.Run("turns GameOver true if next tetromino has collision with stack", func(t *testing.T) {
 		tetris := newTetris()
 		tetris.toStack()
-		tetris.setTetromino()
-		if !tetris.GameOver {
-			t.Errorf("wanted GameOver to be true, got %v", tetris.GameOver)
+		isGameOver := tetris.setTetromino()
+		if !isGameOver {
+			t.Errorf("wanted GameOver to be true, got %v", isGameOver)
 		}
 	})
 }
