@@ -7,6 +7,8 @@ import (
 	"strings"
 	"time"
 
+	"charm.land/bubbles/v2/help"
+	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
 	tetris "github.com/alwedo/tetris/tetrisv2"
@@ -17,10 +19,15 @@ type GameModel struct {
 	gameState    tetris.GameMessage
 	ctx          context.Context
 	cancelCtx    context.CancelFunc
+	keys         gameKeyMap
+	help         help.Model
 }
 
 func NewGameModel() GameModel {
-	return GameModel{}
+	return GameModel{
+		keys: gameKeys,
+		help: help.New(),
+	}
 }
 
 func (m *GameModel) Init() tea.Cmd {
@@ -66,37 +73,26 @@ func (m *GameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.listenToGameUpdates(m.ctx)
 
 	case tea.KeyPressMsg:
-		switch msg.String() {
-		// TODO: change to esc
-		case "q":
+		switch {
+		case key.Matches(msg, m.keys.Quit):
 			m.cancelCtx()
 			return m, func() tea.Msg {
 				return BackToLobbyMsg{Reason: "user_quit"}
 			}
-
-		case "left", "a":
+		case key.Matches(msg, m.keys.MoveLeft):
 			m.gameInstance.Do(tetris.MoveLeft())
-			return m, nil
-
-		case "right", "d":
+		case key.Matches(msg, m.keys.MoveRight):
 			m.gameInstance.Do(tetris.MoveRight())
-			return m, nil
-
-		case "down", "j", "s":
+		case key.Matches(msg, m.keys.MoveDown):
 			m.gameInstance.Do(tetris.MoveDown())
-			return m, nil
-
-		case "space":
+		case key.Matches(msg, m.keys.DropDown):
 			m.gameInstance.Do(tetris.DropDown())
-			return m, nil
-
-		case "z":
+		case key.Matches(msg, m.keys.RotateLeft):
 			m.gameInstance.Do(tetris.RotateLeft())
-			return m, nil
-
-		case "x", "up", "k":
+		case key.Matches(msg, m.keys.RotateRight):
 			m.gameInstance.Do(tetris.RotateRight())
-			return m, nil
+		case key.Matches(msg, m.keys.Help):
+			m.help.ShowAll = !m.help.ShowAll
 		}
 	}
 
@@ -144,7 +140,9 @@ func (m *GameModel) View() tea.View {
 	return tea.NewView(
 		lipgloss.NewStyle().
 			Border(lipgloss.RoundedBorder()).
-			Render(lipgloss.JoinVertical(lipgloss.Center, rows...)),
+			Render(lipgloss.JoinVertical(lipgloss.Center, rows...)) + "\n" +
+			lipgloss.NewStyle().Border(lipgloss.RoundedBorder()).
+				Foreground(lipgloss.Color("#FF75B7")).Render(m.help.View(m.keys)),
 	)
 }
 

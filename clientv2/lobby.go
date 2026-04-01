@@ -50,7 +50,7 @@ func (m LobbyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return PlayGameMsg{}
 			}
 
-		case "q": // TODO: change to esc
+		case "esc": // TODO: change to esc
 			return m, tea.Quit
 		}
 	}
