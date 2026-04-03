@@ -137,6 +137,7 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.Quit):
 			m.cleanup()
+			// TODO: quit doesn't display you quit
 			return m, func() tea.Msg {
 				return TransitionToLobbyMsg{
 					LocalGameState:  m.localState,

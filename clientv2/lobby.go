@@ -204,29 +204,23 @@ func (m *LobbyModel) View() tea.View {
 		rStack,
 	)
 
+	// Apply overlay for notifications, connecting, or waiting states
 	if m.lobbyState == LobbyStateMenu && m.notification != "" {
 		base = m.applyNotificationOverlay(base)
+	} else if m.lobbyState == LobbyStateConnecting {
+		base = m.applyConnectingOverlay(base)
+	} else if m.lobbyState == LobbyStateWaiting {
+		base = m.applyWaitingOverlay(base)
 	}
 
 	return tea.NewView(base)
 }
 
 func (m *LobbyModel) renderCenterPanel() string {
-	var top string
-
-	switch m.lobbyState {
-	case LobbyStateMenu:
-		top = m.renderMenuPanel()
-	case LobbyStateConnecting:
-		top = m.renderConnectingPanel()
-	case LobbyStateWaiting:
-		top = m.renderWaitingPanel()
-	}
+	// Always render menu panel (overlays will appear on top)
+	top := m.renderMenuPanel()
 
 	helpText := m.help.View(m.keys)
-	if m.lobbyState == LobbyStateConnecting || m.lobbyState == LobbyStateWaiting {
-		helpText = "esc: cancel"
-	}
 
 	bottom := lipgloss.NewStyle().
 		Width(22).
@@ -256,30 +250,6 @@ func (m *LobbyModel) renderMenuPanel() string {
 			lipgloss.NewStyle().Bold(true).Render(appName),
 			"\n",
 			menu.String(),
-		))
-}
-
-func (m *LobbyModel) renderConnectingPanel() string {
-	return lipgloss.NewStyle().
-		Width(22).
-		Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Render(lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(appName),
-			"\n",
-			m.spinner.View()+" Connecting to server...",
-		))
-}
-
-func (m *LobbyModel) renderWaitingPanel() string {
-	return lipgloss.NewStyle().
-		Width(22).
-		Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Render(lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(appName),
-			"\n",
-			m.spinner.View()+" Waiting for opponent...",
 		))
 }
 
@@ -335,10 +305,13 @@ func (m *LobbyModel) waitForOpponent() tea.Cmd {
 func (m *LobbyModel) applyNotificationOverlay(base string) string {
 	notificationBox := lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("205")).
+		Padding(1, 2).
 		Render(lipgloss.JoinVertical(
 			lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(m.notification+"\n"),
-			lipgloss.NewStyle().Faint(true).Render("[OK]"),
+			lipgloss.NewStyle().Bold(true).Render(m.notification),
+			"",
+			lipgloss.NewStyle().Faint(true).Render("Press Enter to continue"),
 		))
 
 	bw := lipgloss.Width(base)
@@ -349,5 +322,51 @@ func (m *LobbyModel) applyNotificationOverlay(base string) string {
 	return lipgloss.NewCompositor(
 		lipgloss.NewLayer(base),
 		lipgloss.NewLayer(notificationBox).X((bw-nw)/2).Y((bh-nh)/2).Z(1),
+	).Render()
+}
+
+func (m *LobbyModel) applyConnectingOverlay(base string) string {
+	connectingBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("69")).
+		Padding(1, 2).
+		Render(lipgloss.JoinVertical(
+			lipgloss.Center,
+			m.spinner.View()+" Connecting to server...",
+			"",
+			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"),
+		))
+
+	bw := lipgloss.Width(base)
+	bh := lipgloss.Height(base)
+	nw := lipgloss.Width(connectingBox)
+	nh := lipgloss.Height(connectingBox)
+
+	return lipgloss.NewCompositor(
+		lipgloss.NewLayer(base),
+		lipgloss.NewLayer(connectingBox).X((bw-nw)/2).Y((bh-nh)/2).Z(1),
+	).Render()
+}
+
+func (m *LobbyModel) applyWaitingOverlay(base string) string {
+	waitingBox := lipgloss.NewStyle().
+		Border(lipgloss.RoundedBorder()).
+		BorderForeground(lipgloss.Color("69")).
+		Padding(1, 2).
+		Render(lipgloss.JoinVertical(
+			lipgloss.Center,
+			m.spinner.View()+" Waiting for opponent...",
+			"",
+			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"),
+		))
+
+	bw := lipgloss.Width(base)
+	bh := lipgloss.Height(base)
+	nw := lipgloss.Width(waitingBox)
+	nh := lipgloss.Height(waitingBox)
+
+	return lipgloss.NewCompositor(
+		lipgloss.NewLayer(base),
+		lipgloss.NewLayer(waitingBox).X((bw-nw)/2).Y((bh-nh)/2).Z(1),
 	).Render()
 }
