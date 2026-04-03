@@ -203,12 +203,14 @@ func (m *LobbyModel) View() tea.View {
 		m.renderCenterPanel(),
 		rStack,
 	)
+	bw := lipgloss.Width(base)
+	bh := lipgloss.Height(base)
 
 	var overlay string
 	if m.lobbyState == LobbyStateMenu && m.notification != "" {
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(m.notification),
+			lipgloss.Wrap(lipgloss.NewStyle().Bold(true).Render(m.notification), bw-8, " "),
 			"",
 			lipgloss.NewStyle().Faint(true).Render("Press Enter to continue"))
 	} else if m.lobbyState == LobbyStateConnecting {
@@ -233,8 +235,6 @@ func (m *LobbyModel) View() tea.View {
 			Render(overlay)
 	}
 
-	bw := lipgloss.Width(base)
-	bh := lipgloss.Height(base)
 	nw := lipgloss.Width(overlay)
 	nh := lipgloss.Height(overlay)
 
