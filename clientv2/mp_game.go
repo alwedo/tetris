@@ -62,27 +62,24 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 		// Send to opponent
 		if err := m.stream.Send(tetris2Proto(&msg)); err != nil {
+			transition := TransitionToLobbyMsg{
+				LocalGameState:  m.localState,
+				RemoteGameState: m.remoteState,
+			}
 			if errors.Is(err, io.EOF) {
-				m.cleanup()
-				return m, func() tea.Msg {
-					return TransitionToLobbyMsg{
-						LocalGameState:  m.localState,
-						RemoteGameState: m.remoteState,
-						Message:         "You Won!",
-					}
-				}
+				transition.Message = "You Won!"
+
+			} else {
+				transition.Err = fmt.Errorf("failed to send: %w", err)
 			}
 			m.cleanup()
 			return m, func() tea.Msg {
-				return TransitionToLobbyMsg{
-					LocalGameState:  m.localState,
-					RemoteGameState: m.remoteState,
-					Err:             fmt.Errorf("failed to send: %w", err),
-				}
+				return transition
 			}
 		}
 
 		if len(msg.ClearedLines) > 0 {
+			// TODO: fix animation to be overlay mask instead of object manipulation
 			complete := make(map[int][]tetris.Shape)
 			for _, v := range msg.ClearedLines {
 				complete[v] = msg.Tetris.Stack[v]
@@ -93,6 +90,7 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.listenToGameUpdates()
 
 	case AnimationMessage:
+
 		if msg.frames == 0 {
 			return m, m.listenToGameUpdates()
 		}
@@ -112,13 +110,14 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		})
 
 	case *pb.GameMessage:
+		// TODO: add animation
 		m.remoteState = msg
 		return m, m.listenToStreamUpdates()
 
 	case streamErrorMsg:
 		m.cleanup()
 		message := "Connection lost"
-		if msg.err.Error() == "game over" {
+		if errors.Is(msg.err, io.EOF) {
 			message = "You Lost!"
 		}
 		return m, func() tea.Msg {
