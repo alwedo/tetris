@@ -86,8 +86,8 @@ var lobbyKeys = lobbyKeyMap{
 		key.WithHelp("↓/s", "move down"),
 	),
 	Select: key.NewBinding(
-		key.WithKeys("space", "enter"),
-		key.WithHelp("space/↵", "select"),
+		key.WithKeys("enter"),
+		key.WithHelp("↵", "select"),
 	),
 	Help: key.NewBinding(
 		key.WithKeys("?"),

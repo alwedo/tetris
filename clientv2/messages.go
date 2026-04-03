@@ -1,0 +1,35 @@
+package client
+
+import (
+	"github.com/alwedo/tetris/pb"
+	tetris "github.com/alwedo/tetris/tetrisv2"
+	"google.golang.org/grpc"
+)
+
+type TransitionToLobbyMsg struct {
+	Err             error
+	Message         string
+	LocalGameState  tetris.GameMessage
+	RemoteGameState *pb.GameMessage
+}
+
+type TransitionToSingleGameMsg struct{}
+
+type TransitionToMPGameMsg struct {
+	Conn          *grpc.ClientConn
+	Stream        grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
+	OpponentState *pb.GameMessage
+}
+
+type connectionSuccessMsg struct {
+	conn   *grpc.ClientConn
+	stream grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
+}
+
+type connectionErrorMsg struct {
+	err error
+}
+
+type streamErrorMsg struct {
+	err error
+}
