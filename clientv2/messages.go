@@ -7,7 +7,6 @@ import (
 )
 
 type TransitionToLobbyMsg struct {
-	Err             error
 	Message         string
 	LocalGameState  tetris.GameMessage
 	RemoteGameState *pb.GameMessage

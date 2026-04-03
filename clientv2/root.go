@@ -58,13 +58,8 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 func (m *RootModel) transitionToLobby(msg TransitionToLobbyMsg) (tea.Model, tea.Cmd) {
 	m.lobbyModel.localGameState = msg.LocalGameState
 	m.lobbyModel.remoteGameState = msg.RemoteGameState
+	m.lobbyModel.notification = msg.Message
 	m.lobbyModel.lobbyState = LobbyStateMenu
-
-	if msg.Err != nil {
-		m.lobbyModel.notification = msg.Err.Error()
-	} else if msg.Message != "" {
-		m.lobbyModel.notification = msg.Message
-	}
 
 	m.currentModel = m.lobbyModel
 	return m, m.currentModel.Init()

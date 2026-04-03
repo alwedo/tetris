@@ -13,7 +13,9 @@ import (
 	"github.com/alwedo/tetris/pb"
 	tetris "github.com/alwedo/tetris/tetrisv2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/status"
 )
 
 type LobbyState int
@@ -176,7 +178,7 @@ func (m *LobbyModel) updateWaiting(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case streamErrorMsg:
 		m.cleanup()
 		m.lobbyState = LobbyStateMenu
-		m.notification = "Connection lost: " + msg.err.Error()
+		m.notification = msg.err.Error()
 		return m, nil
 
 	case tea.KeyPressMsg:
@@ -320,6 +322,10 @@ func (m *LobbyModel) waitForOpponent() tea.Cmd {
 	return func() tea.Msg {
 		msg, err := m.stream.Recv()
 		if err != nil {
+			st, ok := status.FromError(err)
+			if ok && st.Code() == codes.DeadlineExceeded { //nolint: gocritic
+				return streamErrorMsg{err: ErrSadAndAlone}
+			}
 			return streamErrorMsg{err: fmt.Errorf("connection lost: %w", err)}
 		}
 		return msg

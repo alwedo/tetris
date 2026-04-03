@@ -14,7 +14,15 @@ import (
 	"github.com/alwedo/tetris/pb"
 	tetris "github.com/alwedo/tetris/tetrisv2"
 	"google.golang.org/grpc"
+	"google.golang.org/grpc/codes"
+	"google.golang.org/grpc/status"
 )
+
+const youQuit = "You quit! 🐔"
+
+var ErrYouLose error = errors.New("You Lose!")
+var ErrYouWon error = errors.New("You Won!")
+var ErrSadAndAlone error = errors.New("There is no one to play with :(")
 
 type MPPlayingModel struct {
 	localGame   *tetris.Game
@@ -67,10 +75,11 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				RemoteGameState: m.remoteState,
 			}
 			if errors.Is(err, io.EOF) {
-				transition.Message = "You Won!"
+				transition.Message = ErrYouWon.Error()
+				// transition.Message = "You Won!"
 
 			} else {
-				transition.Err = fmt.Errorf("failed to send: %w", err)
+				transition.Message = "error in stream send():\n" + err.Error()
 			}
 			m.cleanup()
 			return m, func() tea.Msg {
@@ -116,15 +125,11 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case streamErrorMsg:
 		m.cleanup()
-		message := "Connection lost"
-		if errors.Is(msg.err, io.EOF) {
-			message = "You Lost!"
-		}
 		return m, func() tea.Msg {
 			return TransitionToLobbyMsg{
 				LocalGameState:  m.localState,
 				RemoteGameState: m.remoteState,
-				Message:         message,
+				Message:         msg.err.Error(),
 			}
 		}
 
@@ -136,7 +141,7 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return TransitionToLobbyMsg{
 					LocalGameState:  m.localState,
 					RemoteGameState: m.remoteState,
-					Message:         "You quit",
+					Message:         youQuit,
 				}
 			}
 
@@ -229,11 +234,12 @@ func (m *MPPlayingModel) listenToGameUpdates() tea.Cmd {
 		case msg, ok := <-m.localGame.GameMessageCh:
 			if !ok {
 				// Channel closed = game over (you lost)
-				return streamErrorMsg{err: fmt.Errorf("game over")}
+				return streamErrorMsg{err: ErrYouLose}
 			}
 			return msg
 		case <-m.ctx.Done():
-			return streamErrorMsg{err: fmt.Errorf("context cancelled")}
+			// opponent quit, you won
+			return streamErrorMsg{err: ErrYouWon}
 		}
 	}
 }
@@ -242,7 +248,21 @@ func (m *MPPlayingModel) listenToStreamUpdates() tea.Cmd {
 	return func() tea.Msg {
 		msg, err := m.stream.Recv()
 		if err != nil {
-			return streamErrorMsg{err: err}
+			if err == io.EOF {
+				// you won
+				return ErrYouWon
+				// return streamErrorMsg{err: fmt.Errorf("listening stream: %w", err)}
+			}
+			st, ok := status.FromError(err)
+			if ok && st.Code() == codes.Canceled { //nolint: gocritic
+				// you won
+				return nil
+			} else if ok && st.Code() == codes.DeadlineExceeded {
+				// opponent didnt show up
+				return streamErrorMsg{err: ErrSadAndAlone}
+			}
+
+			return streamErrorMsg{err: fmt.Errorf("listening stream: %w", err)}
 		}
 		return msg
 	}
