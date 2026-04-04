@@ -24,7 +24,7 @@ func main() {
 	defer s.Stop()
 	pb.RegisterTetrisServiceServer(s, server.New())
 
-	fmt.Printf("starting server in port %s...\n", port)
+	fmt.Printf("Tetris Server %s starting in port %s...\n", version, port)
 	if err := s.Serve(lis); err != nil {
 		log.Printf("failed to serve: %v", err)
 	}
