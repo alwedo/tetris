@@ -12,6 +12,8 @@ import (
 
 const port = ":9000"
 
+var version = "dev"
+
 func main() {
 	lis, err := net.Listen("tcp", port) //nolint:gosec
 	if err != nil {
