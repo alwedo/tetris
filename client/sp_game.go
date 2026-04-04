@@ -9,7 +9,7 @@ import (
 	"charm.land/bubbles/v2/key"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	tetris "github.com/alwedo/tetris/tetrisv2"
+	"github.com/alwedo/tetris/tetris"
 )
 
 type SingleGameModel struct {
