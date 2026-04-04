@@ -76,7 +76,6 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if errors.Is(err, io.EOF) {
 				transition.Message = ErrYouWon.Error()
-				// transition.Message = "You Won!"
 
 			} else {
 				transition.Message = "error in stream send():\n" + err.Error()
@@ -99,7 +98,6 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.listenToGameUpdates()
 
 	case AnimationMessage:
-
 		if msg.frames == 0 {
 			return m, m.listenToGameUpdates()
 		}
@@ -137,7 +135,6 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		switch {
 		case key.Matches(msg, m.keys.Quit):
 			m.cleanup()
-			// TODO: quit doesn't display you quit
 			return m, func() tea.Msg {
 				return TransitionToLobbyMsg{
 					LocalGameState:  m.localState,

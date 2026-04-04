@@ -34,14 +34,12 @@ type LobbyModel struct {
 	keys         lobbyKeyMap
 	help         help.Model
 
-	// Persisted game states (injected by root)
 	localGameState  tetris.GameMessage
 	remoteGameState *pb.GameMessage
 
-	// Lobby internal state
 	lobbyState LobbyState
 
-	// Connection state (only used when lobbyState != Menu)
+	// connection state (only used when lobbyState != Menu)
 	spinner spinner.Model
 	ctx     context.Context
 	cancel  context.CancelFunc
