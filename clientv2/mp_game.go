@@ -239,8 +239,7 @@ func (m *MPPlayingModel) listenToGameUpdates() tea.Cmd {
 			}
 			return msg
 		case <-m.ctx.Done():
-			// opponent quit, you won
-			return streamErrorMsg{err: ErrYouWon}
+			return nil
 		}
 	}
 }
