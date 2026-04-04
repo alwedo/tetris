@@ -104,17 +104,16 @@ func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				return m, func() tea.Msg {
 					return TransitionToSingleGameMsg{}
 				}
-			} else {
-				m.lobbyState = LobbyStateConnecting
-				ctx, cancel := context.WithCancel(context.Background())
-				m.ctx = ctx
-				m.cancel = cancel
-
-				return m, tea.Batch(
-					m.spinner.Tick,
-					m.connectToServer(),
-				)
 			}
+			m.lobbyState = LobbyStateConnecting
+			ctx, cancel := context.WithCancel(context.Background())
+			m.ctx = ctx
+			m.cancel = cancel
+
+			return m, tea.Batch(
+				m.spinner.Tick,
+				m.connectToServer(),
+			)
 		case key.Matches(msg, m.keys.Quit):
 			return m, tea.Quit
 		}
@@ -134,7 +133,13 @@ func (m *LobbyModel) updateConnecting(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conn = msg.conn
 		m.stream = msg.stream
 		m.lobbyState = LobbyStateWaiting
-		m.stream.Send(pb.GameMessage_builder{Name: new("Player")}.Build())
+		if err := m.stream.Send(pb.GameMessage_builder{Name: new("Player")}.Build()); err != nil {
+			return m, func() tea.Msg {
+				return connectionErrorMsg{
+					err: fmt.Errorf("sending first message: %w", err),
+				}
+			}
+		}
 		return m, tea.Batch(
 			m.spinner.Tick,
 			m.waitForOpponent(),
@@ -284,7 +289,7 @@ func (m *LobbyModel) cleanup() {
 		m.cancel()
 	}
 	if m.stream != nil {
-		m.stream.CloseSend()
+		m.stream.CloseSend() // nolint: errcheck
 	}
 	if m.conn != nil {
 		m.conn.Close()

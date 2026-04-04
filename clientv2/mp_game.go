@@ -20,9 +20,9 @@ import (
 
 const youQuit = "You quit! 🐔"
 
-var ErrYouLose error = errors.New("You Lose!")
-var ErrYouWon error = errors.New("You Won!")
-var ErrSadAndAlone error = errors.New("There is no one to play with :(")
+var ErrYouLose error = errors.New("You Lose!")                           // nolint: revive
+var ErrYouWon error = errors.New("You Won!")                             // nolint: revive
+var ErrSadAndAlone error = errors.New("There is no one to play with :(") // nolint: revive, staticcheck
 
 type MPPlayingModel struct {
 	localGame   *tetris.Game
@@ -219,7 +219,7 @@ func (m *MPPlayingModel) cleanup() {
 		m.cancel()
 	}
 	if m.stream != nil {
-		m.stream.CloseSend()
+		m.stream.CloseSend() // nolint: errcheck
 	}
 	if m.conn != nil {
 		m.conn.Close()
@@ -296,7 +296,7 @@ func tetris2Proto(t *tetris.GameMessage) *pb.GameMessage {
 
 	return pb.GameMessage_builder{
 		Name:       new("Player"),
-		LinesClear: new(int32(t.Tetris.Lines)),
+		LinesClear: new(int32(t.Tetris.Lines)), // nolint: gosec
 		Stack:      rendered,
 	}.Build()
 }

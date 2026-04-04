@@ -29,7 +29,7 @@ func NewSingleGameModel() *SingleGameModel {
 }
 
 func (m *SingleGameModel) Init() tea.Cmd {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(context.Background()) // nolint: gosec
 	m.ctx = ctx
 	m.cancel = cancel
 	m.game = tetris.Start(ctx)
