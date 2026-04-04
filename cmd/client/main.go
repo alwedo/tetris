@@ -20,8 +20,8 @@ const (
 )
 
 var (
-	debug, noGhost bool
-	name, address  string
+	noGhost       bool
+	name, address string
 )
 
 func main() {

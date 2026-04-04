@@ -79,7 +79,7 @@ func (m *LobbyModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
-	switch msg := msg.(type) {
+	switch msg := msg.(type) { // nolint: gocritic
 	case tea.KeyPressMsg:
 		if m.notification != "" {
 			if key.Matches(msg, m.keys.Select) {
@@ -210,19 +210,20 @@ func (m *LobbyModel) View() tea.View {
 	bh := lipgloss.Height(base)
 
 	var overlay string
-	if m.lobbyState == LobbyStateMenu && m.notification != "" {
+	switch {
+	case m.lobbyState == LobbyStateMenu && m.notification != "":
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
 			lipgloss.Wrap(lipgloss.NewStyle().Bold(true).Render(m.notification), bw-8, " "),
 			"",
 			lipgloss.NewStyle().Faint(true).Render("Press Enter to continue"))
-	} else if m.lobbyState == LobbyStateConnecting {
+	case m.lobbyState == LobbyStateConnecting:
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
 			m.spinner.View()+" Connecting to server...",
 			"",
 			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"))
-	} else if m.lobbyState == LobbyStateWaiting {
+	case m.lobbyState == LobbyStateWaiting:
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
 			m.spinner.View()+" Waiting for opponent...",

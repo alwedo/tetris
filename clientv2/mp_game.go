@@ -20,8 +20,9 @@ import (
 
 const youQuit = "You quit! 🐔"
 
-var ErrYouLose error = errors.New("You Lose!")                           // nolint: revive
-var ErrYouWon error = errors.New("You Won!")                             // nolint: revive
+// TODO: refactor this
+var ErrYouLose error = errors.New("You Lose!")                           // nolint: revive, staticcheck
+var ErrYouWon error = errors.New("You Won!")                             // nolint: revive, staticcheck
 var ErrSadAndAlone error = errors.New("There is no one to play with :(") // nolint: revive, staticcheck
 
 type MPPlayingModel struct {
@@ -76,7 +77,6 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			}
 			if errors.Is(err, io.EOF) {
 				transition.Message = ErrYouWon.Error()
-
 			} else {
 				transition.Message = "error in stream send():\n" + err.Error()
 			}
