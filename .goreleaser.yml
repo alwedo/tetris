@@ -1,0 +1,41 @@
+version: 2
+
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: build
+    main: ./cmd/{{ .Env.COMPONENT }}
+    binary: "{{ .Env.BINARY_NAME }}"
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X main.version={{ .Version }}
+
+archives:
+  - id: archive
+    name_template: >-
+      {{ .Env.BINARY_NAME }}-{{.Version}}-{{.Os}}-{{.Arch}}
+    files:
+      - LICENSE*
+      - README*
+      - CHANGELOG*
+
+checksum:
+  name_template: 'checksums.txt'
+
+release:
+  github:
+    owner: alwedo
+    name: tetris
+  name_template: "Tetris {{ title .Env.COMPONENT }} {{.Version}}"
+  prerelease: auto
