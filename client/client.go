@@ -262,7 +262,6 @@ start:
 			c.render.multiPlayer(&mpData{local: lu})
 			if err := stream.Send(pb.GameMessage_builder{
 				Name:       proto.String(c.options.Name),
-				IsGameOver: proto.Bool(lu.GameOver),
 				IsStarted:  proto.Bool(true),
 				LinesClear: proto.Int32(int32(lu.LinesClear)), // nolint:gosec
 				Stack:      stack2Proto(lu),
@@ -291,11 +290,6 @@ start:
 			}
 			c.tetris.RemoteLines(ru.GetLinesClear())
 			c.render.multiPlayer(&mpData{remote: ru})
-			if ru.GetIsGameOver() {
-				c.logger.Debug("listenOnline closed through remote.GetIsGameOver()")
-				c.render.lobby(youWon())
-				return
-			}
 		case <-ctx.Done():
 			c.logger.Debug("listenOnline ctx.Done() was closed")
 			c.render.lobby(opponentLeft())
