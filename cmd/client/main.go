@@ -10,7 +10,7 @@ import (
 	client "github.com/alwedo/tetris/client"
 )
 
-const VERSION = "v0.0.13"
+var version = "dev"
 
 const (
 	versionFlag = "version"
@@ -35,7 +35,7 @@ func main() {
 }
 
 func evalOptions() {
-	flag.BoolFunc(versionFlag, "Prints version", version)
+	flag.BoolFunc(versionFlag, "Prints version", versionFunc)
 	flag.BoolVar(&noGhost, noGhostFlag, false, "Disables Ghost Piece")
 	flag.StringVar(&name, nameFlag, "noName", "Current player's name")
 	flag.StringVar(&address, addressFlag, "127.0.0.1", "Tetris server address")
@@ -44,8 +44,8 @@ func evalOptions() {
 	}
 }
 
-func version(string) error {
-	fmt.Println(VERSION)
+func versionFunc(string) error {
+	fmt.Println(version)
 	os.Exit(0)
 
 	return nil
