@@ -211,6 +211,7 @@ func (m *LobbyModel) View() tea.View {
 
 	var overlay string
 	switch {
+	// TODO: refactor
 	case m.lobbyState == LobbyStateMenu && m.notification != "":
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
@@ -250,6 +251,7 @@ func (m *LobbyModel) View() tea.View {
 
 func (m *LobbyModel) renderCenterPanel() string {
 	// Always render menu panel (overlays will appear on top)
+	// TODO: refactor
 	top := m.renderMenuPanel()
 
 	helpText := m.help.View(m.keys)
