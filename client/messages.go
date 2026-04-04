@@ -2,7 +2,7 @@ package client
 
 import (
 	"github.com/alwedo/tetris/pb"
-	tetris "github.com/alwedo/tetris/tetrisv2"
+	"github.com/alwedo/tetris/tetris"
 	"google.golang.org/grpc"
 )
 

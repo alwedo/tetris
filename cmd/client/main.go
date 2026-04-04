@@ -7,7 +7,7 @@ import (
 	"os"
 
 	tea "charm.land/bubbletea/v2"
-	client "github.com/alwedo/tetris/clientv2"
+	client "github.com/alwedo/tetris/client"
 )
 
 const VERSION = "v0.0.13"

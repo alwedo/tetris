@@ -1,15 +1,3 @@
-// Package tetris contains the logic of the game.
-// Based on:
-//   - https://tetris.wiki/Tetris_Guideline
-//   - https://tetris.fandom.com/wiki/Tetris_Guideline
-//
-// Tetris © 1985~2025 Tetris Holding.
-// Tetris logos, Tetris theme song and Tetriminos are trademarks of Tetris Holding.
-// The Tetris trade dress is owned by Tetris Holding.
-// Licensed to The Tetris Company.
-// Tetris Game Design by Alexey Pajitnov.
-// Tetris Logo Design by Roger Dean.
-// All Rights Reserved.
 package tetris
 
 import (
@@ -17,23 +5,40 @@ import (
 	"slices"
 )
 
+// Tetris contains the state of the game.
 type Tetris struct {
 	// Stack is the playfield. 20 rows x 10 columns.
 	// Columns are 0 > 9 left to right and represent the X axis
 	// Rows are 19 > 0 top to bottom and represent the Y axis
-	// An empty string is an empty cell. Otherwise it has the color it will be rendered with.
+	// An empty string is an empty cell. Otherwise it has the
+	// shape of the tetromino.
 	Stack [][]Shape
 
-	Tetromino    *Tetromino
-	NexTetromino *Tetromino
+	// Current Tetromino in play.
+	Tetromino *Tetromino
 
-	Level      int
-	LinesClear int
+	// Next Tetromino to be drawn.
+	NextTetromino *Tetromino
 
-	GameOver bool
+	// Current level.
+	Level int
+
+	// Number of lines cleared.
+	Lines int
 
 	bag *bag
 }
+
+type action int
+
+const (
+	moveLeft action = iota
+	moveRight
+	moveDown
+	dropDown
+	rotateLeft
+	rotateRight
+)
 
 func newTetris() *Tetris {
 	// creates an empty 20x10 stack
@@ -51,29 +56,38 @@ func newTetris() *Tetris {
 	return t
 }
 
-func (t *Tetris) action(a Action) {
+// action will perform the requested action and return
+// true if the action caused the round to finish.
+// Only dropDown and moveDown on collision return true.
+func (t *Tetris) action(a action) bool {
 	switch a {
-	case MoveLeft:
+	case dropDown:
+		t.Tetromino.Y += t.dropDownDelta()
+		return true
+	case moveDown:
+		if t.isCollision(0, -1, t.Tetromino) {
+			return true
+		}
+		t.Tetromino.Y--
+	case moveLeft:
 		if !t.isCollision(-1, 0, t.Tetromino) {
 			t.Tetromino.X--
 		}
-	case MoveRight:
+	case moveRight:
 		if !t.isCollision(1, 0, t.Tetromino) {
 			t.Tetromino.X++
 		}
-	case MoveDown:
-		if !t.isCollision(0, -1, t.Tetromino) {
-			t.Tetromino.Y--
-		}
-	case DropDown:
-		t.Tetromino.Y += t.dropDownDelta()
-	default:
+	case rotateLeft, rotateRight:
 		t.rotate(a)
+	default:
+		// Unlisted actions are ignored
 	}
 	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
+
+	return false
 }
 
-func (t *Tetris) rotate(a Action) {
+func (t *Tetris) rotate(a action) {
 	// https://tetris.wiki/Super_Rotation_System
 	if t.Tetromino.Shape == O {
 		// the O shape doesn't rotate.
@@ -94,12 +108,12 @@ func (t *Tetris) rotate(a Action) {
 	// rotates the grid
 	for ix, x := range t.Tetromino.Grid {
 		switch a {
-		case RotateRight:
+		case rotateRight:
 			col := len(x) - ix - 1
 			for iy, y := range x {
 				test.Grid[iy][col] = y
 			}
-		case RotateLeft:
+		case rotateLeft:
 			for iy, y := range x {
 				test.Grid[len(x)-iy-1][ix] = y
 			}
@@ -108,21 +122,21 @@ func (t *Tetris) rotate(a Action) {
 
 	var rCase string
 	switch {
-	case t.Tetromino.rState.Value == rState0 && a == RotateRight:
+	case t.Tetromino.rState.Value == rState0 && a == rotateRight:
 		rCase = "0>R"
-	case t.Tetromino.rState.Value == rStateR && a == RotateLeft:
+	case t.Tetromino.rState.Value == rStateR && a == rotateLeft:
 		rCase = "R>0"
-	case t.Tetromino.rState.Value == rStateR && a == RotateRight:
+	case t.Tetromino.rState.Value == rStateR && a == rotateRight:
 		rCase = "R>2"
-	case t.Tetromino.rState.Value == rState2 && a == RotateLeft:
+	case t.Tetromino.rState.Value == rState2 && a == rotateLeft:
 		rCase = "2>R"
-	case t.Tetromino.rState.Value == rState2 && a == RotateRight:
+	case t.Tetromino.rState.Value == rState2 && a == rotateRight:
 		rCase = "2>L"
-	case t.Tetromino.rState.Value == rStateL && a == RotateLeft:
+	case t.Tetromino.rState.Value == rStateL && a == rotateLeft:
 		rCase = "L>2"
-	case t.Tetromino.rState.Value == rStateL && a == RotateRight:
+	case t.Tetromino.rState.Value == rStateL && a == rotateRight:
 		rCase = "L>0"
-	case t.Tetromino.rState.Value == rState0 && a == RotateLeft:
+	case t.Tetromino.rState.Value == rState0 && a == rotateLeft:
 		rCase = "0>L"
 	}
 
@@ -137,29 +151,20 @@ func (t *Tetris) rotate(a Action) {
 			t.Tetromino.X += v[0]
 			t.Tetromino.Y += v[1]
 			switch a {
-			case RotateRight:
+			case rotateRight:
 				t.Tetromino.rState = t.Tetromino.rState.Next()
-			case RotateLeft:
+			case rotateLeft:
 				t.Tetromino.rState = t.Tetromino.rState.Prev()
 			}
+			t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
 			return
 		}
 	}
 }
 
-func (t *Tetris) setTetromino() {
-	if t.NexTetromino == nil {
-		t.NexTetromino = t.bag.draw()
-	}
-	t.Tetromino = t.NexTetromino
-	t.NexTetromino = t.bag.draw()
-
-	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
-}
-
+// isCollision() will receive the desired future X and Y tetromino's position
+// and calculate if there is a collision or if it's out of bounds from the stack
 func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
-	// isCollision() will receive the desired future X and Y tetromino's position
-	// and calculate if there is a collision or if it's out of bounds from the stack
 	for iy, y := range tetromino.Grid {
 		for ix, x := range y {
 			// we check only if the tetromino cell is true as we don't
@@ -167,7 +172,7 @@ func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
 			if x {
 				// the position of the tetromino cell against the stack is:
 				// current X and Y + cell index offset + desired position offset
-				// Y axis decrease to 0 so we need to substract the index
+				// Y axis decrease to 0 so we need to subtract the index
 				yPos := tetromino.Y - iy + deltaY
 				xPos := tetromino.X + ix + deltaX
 
@@ -181,7 +186,10 @@ func (t *Tetris) isCollision(deltaX, deltaY int, tetromino *Tetromino) bool {
 	return false
 }
 
-func (t *Tetris) toStack() {
+// toStack moves the current tetromino to the stack after
+// a collision that prevents it from moving further down.
+// It returns a slice of indexes of the lines to be cleared.
+func (t *Tetris) toStack() []int {
 	// moves the tetromino to the stack
 	for ix, x := range t.Tetromino.Grid {
 		for iy, y := range x {
@@ -190,37 +198,78 @@ func (t *Tetris) toStack() {
 			}
 		}
 	}
+
+	var lines []int
+	for i, x := range t.Stack {
+		if !slices.Contains(x, "") {
+			lines = append(lines, i)
+		}
+	}
+	return lines
 }
 
-func (t *Tetris) setLevel() {
-	// set the fixed-goal level system
-	// https://tetris.wiki/Marathon
-	//
-	// In the fixed-goal system, each level requires 10 lines to clear.
-	// If the player starts at a later level, the number of lines required is the same
-	// as if starting at level 1. An example is when the player starts at level 5,
-	// the player will have to clear 50 lines to advance to level 6
-	var l int
-	switch {
-	case t.LinesClear < 10:
-		l = 1
-	case t.LinesClear >= 10 && t.LinesClear < 100:
-		l = (t.LinesClear/10)%10 + 1
-	case t.LinesClear >= 100:
-		l = t.LinesClear/10 + 1
+// setTetromino uses the bag to draw both current
+// and next tetrominos. It returns a bool that would
+// indicate game over if NextTetromino has a collision.
+func (t *Tetris) setTetromino() bool {
+	if t.NextTetromino == nil {
+		t.NextTetromino = t.bag.draw()
 	}
-	if l > t.Level {
-		t.Level = l
+
+	// we consider game over when next tetromino spawn's
+	// position would have a collision with the stack.
+	if t.isCollision(0, 0, t.NextTetromino) {
+		return true
 	}
+
+	t.Tetromino, t.NextTetromino = t.NextTetromino, t.bag.draw()
+	t.Tetromino.GhostY = t.Tetromino.Y + t.dropDownDelta()
+	return false
 }
 
-func (t *Tetris) isGameOver() bool {
-	// we consider game over when next tetromino spawn position would have a collision on the stack.
-	t.GameOver = t.isCollision(0, 0, t.NexTetromino)
-	return t.GameOver
+// finishRound takes a slice of completed lines indexes and
+// performs end-of-round tasks. It returns the response from
+// setTetromino, determining if the game is over.
+// - Removes completed lines
+// - Increases Lines count
+// - Calculates new level
+// - Executes setTetromino
+func (t *Tetris) finishRound(lines []int) bool {
+	if len(lines) > 0 {
+		// remove complete lines in reverse order to avoid index shift issues.
+		for i := len(lines) - 1; i >= 0; i-- {
+			t.Stack = slices.Delete(t.Stack, lines[i], lines[i]+1)
+			t.Stack = append(t.Stack, make([]Shape, 10))
+		}
+		t.Lines += len(lines)
+
+		// set the fixed-goal level system
+		// https://tetris.wiki/Marathon
+		//
+		// In the fixed-goal system, each level requires 10 lines to clear.
+		// If the player starts at a later level, the number of lines required is the same
+		// as if starting at level 1. An example is when the player starts at level 5,
+		// the player will have to clear 50 lines to advance to level 6
+		var l int
+		switch {
+		case t.Lines < 10:
+			l = 1
+		case t.Lines >= 10 && t.Lines < 100:
+			l = (t.Lines/10)%10 + 1
+		case t.Lines >= 100:
+			l = t.Lines/10 + 1
+		}
+		if l > t.Level {
+			t.Level = l
+		}
+	}
+
+	return t.setTetromino() // evaluates game over
 }
 
 func (t *Tetris) dropDownDelta() int {
+	// dropDownDelta calculates how much the Tetromino
+	// has to move down until the next collision.
 	var delta int
 	for !t.isCollision(0, delta, t.Tetromino) {
 		delta--
@@ -228,29 +277,25 @@ func (t *Tetris) dropDownDelta() int {
 	return delta + 1
 }
 
-func (t *Tetris) read() *Tetris {
-	// read() returns a copy of the current Tetris status that's safe to read concurrently.
-	var stack [][]Shape
-	if t.Stack != nil {
-		stack = make([][]Shape, len(t.Stack))
-		for i := range t.Stack {
-			stack[i] = make([]Shape, len(t.Stack[i]))
-			copy(stack[i], t.Stack[i])
-		}
+// read() returns a copy of the current Tetris status that's safe to read concurrently.
+func (t *Tetris) read() Tetris {
+	stack := make([][]Shape, len(t.Stack))
+	for i := range t.Stack {
+		stack[i] = append([]Shape(nil), t.Stack[i]...)
 	}
-	return &Tetris{
-		Stack:        stack,
-		Tetromino:    t.Tetromino.copy(),
-		NexTetromino: t.NexTetromino.copy(),
-		Level:        t.Level,
-		LinesClear:   t.LinesClear,
-		GameOver:     t.GameOver,
+
+	return Tetris{
+		Stack:         stack,
+		Tetromino:     t.Tetromino.copy(),
+		NextTetromino: t.NextTetromino.copy(),
+		Level:         t.Level,
+		Lines:         t.Lines,
 	}
 }
 
 type bag struct {
 	firstDraw bool
-	bag       []*Tetromino
+	bag       []Shape
 }
 
 func newBag() *bag {
@@ -262,19 +307,18 @@ func (b *bag) draw() *Tetromino {
 	// first piece is always I, J, L, or T
 	// new bag is generated after last piece is drawn
 	if len(b.bag) == 0 {
-		for _, t := range shapeMap {
-			b.bag = append(b.bag, t())
-		}
+		b.bag = []Shape{I, T, J, L, O, S, Z}
 	}
-	firstDrawList := []Shape{I, T, J, L}
-	i := rand.Intn(len(b.bag)) //nolint: gosec
-	t := b.bag[i]
-	if b.firstDraw && !slices.Contains(firstDrawList, t.Shape) {
-		return b.draw()
+
+	candidates := b.bag
+	if b.firstDraw {
+		candidates = []Shape{I, T, J, L}
+		b.firstDraw = false
 	}
-	b.firstDraw = false
-	b.bag = append(b.bag[:i], b.bag[i+1:]...)
-	return t
+
+	t := candidates[rand.Intn(len(candidates))] //nolint: gosec
+	b.bag = slices.DeleteFunc(b.bag, func(tt Shape) bool { return tt == t })
+	return shapeMap[t]()
 }
 
 var wallKickMap = map[string]map[string][][]int{
