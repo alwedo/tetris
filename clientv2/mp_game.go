@@ -118,6 +118,7 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 	case *pb.GameMessage:
 		// TODO: add animation
+		m.localGame.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
 		m.remoteState = msg
 		return m, m.listenToStreamUpdates()
 

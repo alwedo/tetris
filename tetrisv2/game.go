@@ -103,6 +103,7 @@ type Game struct {
 	ticker      Ticker
 	remoteLines int
 	isAnimating atomic.Bool
+	isClosed    atomic.Bool
 }
 
 // Start() starts a new Tetris Game.
@@ -144,6 +145,7 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 	// Main game loop
 	go func() {
 		defer g.ticker.Stop()
+		defer g.isClosed.Store(true)
 		defer close(uCh)
 		defer close(aCh)
 
@@ -194,6 +196,9 @@ func Start(ctx context.Context, opts ...GameOpts) *Game {
 // Do() performs a command of the tetris.Command type.
 // This function is safe to call asynchronously.
 func (g *Game) Do(c Command) {
+	if g.isClosed.Load() {
+		return
+	}
 	select {
 	case g.actionCh <- c:
 	default:
@@ -285,7 +290,7 @@ func RotateRight() Command {
 // AddRemoteLines will increase the number of remote lines by i.
 func AddRemoteLines(i int) Command {
 	return func(g *Game) bool {
-		g.remoteLines += i
+		g.remoteLines = i
 		return false
 	}
 }
