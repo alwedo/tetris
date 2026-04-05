@@ -1,8 +1,27 @@
-FROM golang:1.25.1 AS build
+FROM golang:latest AS builder
+
 WORKDIR /build
+
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o tetris-server ./cmd/server
-FROM scratch
-COPY --from=build /build/tetris-server /usr/bin/tetris-server
-EXPOSE 9000
-ENTRYPOINT ["/usr/bin/tetris-server"]
+
+RUN make build-tetris
+RUN make build-server
+
+FROM alpine:latest
+
+RUN apk add --no-cache openssh-server
+
+COPY --from=builder /build/bin/tetris-server /usr/local/bin/
+COPY --from=builder /build/bin/tetris /usr/local/bin/
+COPY --from=builder /build/entrypoint.sh /usr/local/bin/
+
+# Create wrapper script that runs tetris and exits
+RUN echo '#!/bin/sh' > /usr/local/bin/tetris-wrapper && \
+    echo 'exec /usr/local/bin/tetris --address=localhost:9000 --name="$USER"' >> /usr/local/bin/tetris-wrapper && \
+    chmod +x /usr/local/bin/tetris-wrapper
+
+EXPOSE 9000 22
+
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
