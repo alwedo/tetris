@@ -1,8 +1,13 @@
-FROM golang:1.25.1 AS build
+FROM golang:latest AS builder
+
 WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o tetris-server ./cmd/server
+RUN make build-ssh
+
 FROM scratch
-COPY --from=build /build/tetris-server /usr/bin/tetris-server
-EXPOSE 9000
-ENTRYPOINT ["/usr/bin/tetris-server"]
+
+COPY --from=builder /build/bin/tetris-ssh /usr/local/bin/
+EXPOSE 9000 22
+ENTRYPOINT ["/usr/local/bin/tetris-ssh"]

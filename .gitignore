@@ -1,6 +1,5 @@
 log*
 .DS_Store
-bin/tetris
-bin/tetris-server
+bin
 demo.cast
 .zed

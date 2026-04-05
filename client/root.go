@@ -1,6 +1,8 @@
 package client
 
 import (
+	"context"
+
 	tea "charm.land/bubbletea/v2"
 )
 
@@ -9,13 +11,17 @@ const appName = "Terminal Tetris"
 type RootModel struct {
 	currentModel tea.Model
 	lobbyModel   *LobbyModel
+	playerName   string
+	ctx          context.Context
 }
 
-func NewRootModel() *RootModel {
-	lobby := NewLobbyModel()
+func NewRootModel(ctx context.Context, pn string) *RootModel {
+	lobby := NewLobbyModel(ctx)
 	return &RootModel{
 		currentModel: lobby,
 		lobbyModel:   lobby,
+		playerName:   pn,
+		ctx:          ctx,
 	}
 }
 
@@ -45,7 +51,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.currentModel.Init()
 
 	case TransitionToMPGameMsg:
-		m.currentModel = NewMPPlayingModel(msg.Conn, msg.Stream, msg.OpponentState)
+		m.currentModel = NewMPPlayingModel(m.ctx, m.playerName, msg.Conn, msg.Stream, msg.OpponentState)
 		return m, m.currentModel.Init()
 	}
 
