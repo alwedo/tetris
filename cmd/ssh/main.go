@@ -14,7 +14,6 @@ import (
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/activeterm"
 	wishbubbletea "charm.land/wish/v2/bubbletea"
-	"charm.land/wish/v2/logging"
 	"github.com/charmbracelet/ssh"
 
 	"github.com/alwedo/tetris/client"
@@ -28,7 +27,6 @@ var version = "dev"
 func main() {
 	sshPort := flag.String("ssh-port", "22", "SSH listen port")
 	grpcPort := flag.String("grpc-port", "9000", "gRPC server port")
-	hostKeyPath := flag.String("host-key", "/data/ssh_host_ed25519", "Path to SSH host key (auto-generated if missing)")
 	flag.Parse()
 
 	grpcAddr := ":" + *grpcPort
@@ -50,11 +48,11 @@ func main() {
 
 	// Configure host key: prefer SSH_HOST_KEY_PEM env var, fall back to file path
 	var hostKeyOption ssh.Option
-	if pem := os.Getenv("SSH_HOST_KEY_PEM"); pem != "" {
-		hostKeyOption = wish.WithHostKeyPEM([]byte(pem))
-	} else {
-		hostKeyOption = wish.WithHostKeyPath(*hostKeyPath)
+	pem := os.Getenv("SSH_HOST_KEY_PEM")
+	if pem == "" {
+		panic("SSH_HOST_KEY_PEM env var not found or empty")
 	}
+	hostKeyOption = wish.WithHostKeyPEM([]byte(pem))
 
 	// Start the wish SSH server
 	sshServer, err := wish.NewServer(
@@ -65,7 +63,6 @@ func main() {
 				return client.NewRootModel(sess.Context(), sess.User()), []tea.ProgramOption{tea.WithFPS(25)}
 			}),
 			activeterm.Middleware(),
-			logging.Middleware(),
 		),
 	)
 	if err != nil {
