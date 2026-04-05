@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   tetris-ssh:
     image: tetris-ssh
