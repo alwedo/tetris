@@ -1,0 +1,6 @@
+.github
+doc
+*.md
+.gitignore
+.golangci.yml
+.goreleaser.yml
