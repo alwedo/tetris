@@ -26,6 +26,7 @@ var ErrYouWon error = errors.New("You Won!")                             // noli
 var ErrSadAndAlone error = errors.New("There is no one to play with :(") // nolint: revive, staticcheck
 
 type MPPlayingModel struct {
+	playerName  string
 	localGame   *tetris.Game
 	localState  tetris.GameMessage
 	remoteState *pb.GameMessage
@@ -38,11 +39,13 @@ type MPPlayingModel struct {
 }
 
 func NewMPPlayingModel(
+	playerName string,
 	conn *grpc.ClientConn,
 	stream grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage],
 	initialOpponentState *pb.GameMessage,
 ) *MPPlayingModel {
 	return &MPPlayingModel{
+		playerName:  playerName,
 		conn:        conn,
 		stream:      stream,
 		remoteState: initialOpponentState,
@@ -70,7 +73,9 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.localState = msg
 
 		// Send to opponent
-		if err := m.stream.Send(tetris2Proto(&msg)); err != nil {
+		sendMsg := tetris2Proto(&msg)
+		sendMsg.SetName(m.playerName)
+		if err := m.stream.Send(sendMsg); err != nil {
 			transition := TransitionToLobbyMsg{
 				LocalGameState:  m.localState,
 				RemoteGameState: m.remoteState,

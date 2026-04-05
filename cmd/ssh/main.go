@@ -61,8 +61,8 @@ func main() {
 		wish.WithAddress(":"+*sshPort),
 		hostKeyOption,
 		wish.WithMiddleware(
-			wishbubbletea.Middleware(func(_ ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return client.NewRootModel(), []tea.ProgramOption{tea.WithFPS(25)}
+			wishbubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
+				return client.NewRootModel(sess.User()), []tea.ProgramOption{tea.WithFPS(25)}
 			}),
 			activeterm.Middleware(),
 			logging.Middleware(),

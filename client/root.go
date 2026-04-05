@@ -9,13 +9,15 @@ const appName = "Terminal Tetris"
 type RootModel struct {
 	currentModel tea.Model
 	lobbyModel   *LobbyModel
+	playerName   string
 }
 
-func NewRootModel() *RootModel {
+func NewRootModel(pn string) *RootModel {
 	lobby := NewLobbyModel()
 	return &RootModel{
 		currentModel: lobby,
 		lobbyModel:   lobby,
+		playerName:   pn,
 	}
 }
 
@@ -45,7 +47,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.currentModel.Init()
 
 	case TransitionToMPGameMsg:
-		m.currentModel = NewMPPlayingModel(msg.Conn, msg.Stream, msg.OpponentState)
+		m.currentModel = NewMPPlayingModel(m.playerName, msg.Conn, msg.Stream, msg.OpponentState)
 		return m, m.currentModel.Init()
 	}
 
