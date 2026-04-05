@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
 	"log"
@@ -27,7 +28,7 @@ var (
 func main() {
 	evalOptions()
 
-	p := tea.NewProgram(client.NewRootModel(nameFlag), tea.WithFPS(25))
+	p := tea.NewProgram(client.NewRootModel(context.Background(), nameFlag), tea.WithFPS(25))
 	if _, err := p.Run(); err != nil {
 		fmt.Printf("Alas, there's been an error: %v", err)
 		os.Exit(1)

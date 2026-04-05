@@ -39,6 +39,7 @@ type MPPlayingModel struct {
 }
 
 func NewMPPlayingModel(
+	parentCtx context.Context,
 	playerName string,
 	conn *grpc.ClientConn,
 	stream grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage],
@@ -51,11 +52,12 @@ func NewMPPlayingModel(
 		remoteState: initialOpponentState,
 		keys:        gameKeys,
 		help:        help.New(),
+		ctx:         parentCtx,
 	}
 }
 
 func (m *MPPlayingModel) Init() tea.Cmd {
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := context.WithCancel(m.ctx)
 	m.ctx = ctx
 	m.cancel = cancel
 

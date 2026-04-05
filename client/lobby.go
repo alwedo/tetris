@@ -40,20 +40,22 @@ type LobbyModel struct {
 	lobbyState LobbyState
 
 	// connection state (only used when lobbyState != Menu)
-	spinner spinner.Model
-	ctx     context.Context
-	cancel  context.CancelFunc
-	conn    *grpc.ClientConn
-	stream  grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
+	spinner  spinner.Model
+	parentCtx context.Context
+	ctx      context.Context
+	cancel   context.CancelFunc
+	conn     *grpc.ClientConn
+	stream   grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
 }
 
-func NewLobbyModel() *LobbyModel {
+func NewLobbyModel(ctx context.Context) *LobbyModel {
 	return &LobbyModel{
 		selectedMode: 0,
 		gameModes:    []string{"Single Player", "Multiplayer"},
 		keys:         lobbyKeys,
 		help:         help.New(),
 		lobbyState:   LobbyStateMenu,
+		parentCtx:    ctx,
 		spinner: spinner.New(
 			spinner.WithSpinner(spinner.Points),
 			spinner.WithStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("205"))),
@@ -106,7 +108,7 @@ func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 				}
 			}
 			m.lobbyState = LobbyStateConnecting
-			ctx, cancel := context.WithCancel(context.Background())
+			ctx, cancel := context.WithCancel(m.parentCtx)
 			m.ctx = ctx
 			m.cancel = cancel
 
@@ -313,7 +315,7 @@ func (m *LobbyModel) connectToServer() tea.Cmd {
 			return connectionErrorMsg{err: fmt.Errorf("unable to connect: %w", err)}
 		}
 
-		stream, err := pb.NewTetrisServiceClient(conn).PlayTetris(context.Background())
+		stream, err := pb.NewTetrisServiceClient(conn).PlayTetris(m.ctx)
 		if err != nil {
 			return connectionErrorMsg{err: fmt.Errorf("unable to start game: %w", err)}
 		}
