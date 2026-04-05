@@ -3,3 +3,5 @@ log*
 bin
 demo.cast
 .zed
+.env
+*ed25519*

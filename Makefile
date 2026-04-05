@@ -47,6 +47,11 @@ build-ssh: mod
 	@CGO_ENABLED=0 go build -trimpath -ldflags "-s -w -X main.version=$(SSH_VERSION)" -o ./bin/tetris-ssh ./cmd/ssh
 	@chmod +x ./bin/tetris-ssh
 
+.PHONY: deploy-ssh
+deploy-ssh:
+	@docker compose down || true
+	@SSH_HOST_KEY_PEM="$$(cat ssh_host_ed25519)" docker compose up -d --build
+
 .PHONY: mod
 mod:
 	@go mod download
