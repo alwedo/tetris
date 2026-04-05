@@ -40,12 +40,12 @@ type LobbyModel struct {
 	lobbyState LobbyState
 
 	// connection state (only used when lobbyState != Menu)
-	spinner  spinner.Model
+	spinner   spinner.Model
 	parentCtx context.Context
-	ctx      context.Context
-	cancel   context.CancelFunc
-	conn     *grpc.ClientConn
-	stream   grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
+	ctx       context.Context
+	cancel    context.CancelFunc
+	conn      *grpc.ClientConn
+	stream    grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
 }
 
 func NewLobbyModel(ctx context.Context) *LobbyModel {
