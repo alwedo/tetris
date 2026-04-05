@@ -1,5 +1,6 @@
 .github
 doc
+bin
 *.md
 .gitignore
 .golangci.yml
