@@ -6,8 +6,8 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
+	"github.com/alwedo/tetris"
 	"github.com/alwedo/tetris/pb"
-	"github.com/alwedo/tetris/tetris"
 )
 
 var colorMap = map[tetris.Shape]color.Color{
