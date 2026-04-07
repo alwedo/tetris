@@ -20,7 +20,6 @@ const (
 )
 
 var (
-	noGhost       bool
 	name, address string
 )
 
