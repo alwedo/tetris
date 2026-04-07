@@ -1,28 +1,32 @@
 edition = "2023";
 
-package tetris;
+package pb;
 
 import "google/protobuf/go_features.proto";
 
-option go_package = "github.com/alwedo/pb";
 option features.(pb.go).api_level = API_OPAQUE;
+option go_package = "github.com/alwedo/tetris/pb";
 
 service TetrisService {
-    rpc PlayTetris(stream GameMessage) returns (stream GameMessage) {}
+  rpc PlayTetris(stream GameMessage) returns (stream GameMessage) {}
 }
 
 message GameMessage {
-    string name = 1;
-    bool is_started = 2;
-    bool is_game_over = 3;
-    int32 lines_clear = 4;
-    Stack stack = 5;
+  string name = 1;
+  bool is_started = 2;
+  ClearedLines cleared_lines = 3;
+  int32 lines_clear = 4;
+  Stack stack = 5;
 }
 
 message Stack {
-    repeated Row rows = 1;
+  repeated Row rows = 1;
 }
 
 message Row {
-    repeated string cells = 1;
+  repeated string cells = 1;
+}
+
+message ClearedLines {
+  repeated int32 cells = 1;
 }

@@ -1,0 +1,101 @@
+name: Release
+
+on:
+    push:
+        branches: ["main"]
+        paths-ignore:
+            - "**/README.md"
+            - "**/.gitignore"
+            - "doc/**"
+            - "bin/**"
+
+permissions:
+    contents: write
+
+jobs:
+    detect-tags:
+        runs-on: ubuntu-latest
+        outputs:
+            matrix: ${{ steps.set-matrix.outputs.matrix }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Detect tags and build matrix
+              id: set-matrix
+              run: |
+                  TAGS=$(git tag --points-at HEAD)
+                  MATRIX_INCLUDE="[]"
+
+                  if echo "$TAGS" | grep -q '^client/v'; then
+                    CLIENT_TAG=$(echo "$TAGS" | grep '^client/v' | head -n1 | sed 's/^client\///')
+                    echo "Found client tag: $CLIENT_TAG"
+                    MATRIX_INCLUDE=$(echo "$MATRIX_INCLUDE" | jq -c '. += [{"component": "client", "binary_name": "tetris", "version": "'$CLIENT_TAG'"}]')
+                  fi
+
+                  if echo "$TAGS" | grep -q '^server/v'; then
+                    SERVER_TAG=$(echo "$TAGS" | grep '^server/v' | head -n1 | sed 's/^server\///')
+                    echo "Found server tag: $SERVER_TAG"
+                    MATRIX_INCLUDE=$(echo "$MATRIX_INCLUDE" | jq -c '. += [{"component": "server", "binary_name": "tetris-server", "version": "'$SERVER_TAG'"}]')
+                  fi
+
+                  echo "matrix={\"include\":$MATRIX_INCLUDE}" >> $GITHUB_OUTPUT
+
+    release:
+        needs: detect-tags
+        if: needs.detect-tags.outputs.matrix != '{"include":[]}'
+        runs-on: ubuntu-latest
+        strategy:
+            matrix: ${{ fromJson(needs.detect-tags.outputs.matrix) }}
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+              with:
+                  fetch-depth: 0
+
+            - name: Set up Go
+              uses: actions/setup-go@v6
+              with:
+                  go-version: stable
+
+            - name: Run GoReleaser for ${{ matrix.component }}
+              uses: goreleaser/goreleaser-action@v6
+              with:
+                  distribution: goreleaser
+                  version: latest
+                  args: release --clean
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  GORELEASER_CURRENT_TAG: ${{ matrix.version }}
+                  COMPONENT: ${{ matrix.component }}
+                  BINARY_NAME: ${{ matrix.binary_name }}
+
+    build-ssh-docker:
+        needs: detect-tags
+        if: needs.detect-tags.outputs.matrix != '{"include":[]}'
+        runs-on: ubuntu-latest
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Set up Docker Buildx
+              uses: docker/setup-buildx-action@v4
+
+            - name: Login to Scaleway Container Registry
+              uses: docker/login-action@v4
+              with:
+                  registry: rg.nl-ams.scw.cloud/tetris-ssh
+                  username: nologin
+                  password: ${{ secrets.SCW_SECRET_KEY }}
+
+            - name: Build and push SSH server image
+              uses: docker/build-push-action@v7
+              with:
+                  context: .
+                  platforms: linux/amd64
+                  push: true
+                  tags: |
+                      rg.nl-ams.scw.cloud/tetris-ssh/tetris-ssh:latest
+                      rg.nl-ams.scw.cloud/tetris-ssh/tetris-ssh:${{ github.sha }}

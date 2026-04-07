@@ -1,5 +1,7 @@
 log*
 .DS_Store
-bin/tetris
+bin
 demo.cast
 .zed
+.env
+*ed25519*

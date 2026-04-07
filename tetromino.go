@@ -39,6 +39,8 @@ type Tetromino struct {
 	rState *ring.Ring
 }
 
+// copy returns a copy of the Tetromino that's safe to read concurrently.
+// We don't copy `rState` as this is useless for consumers.
 func (t *Tetromino) copy() *Tetromino {
 	if t == nil {
 		return nil

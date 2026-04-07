@@ -1,0 +1,10 @@
+services:
+  tetris-ssh:
+    image: tetris-ssh
+    build: .
+    ports:
+      - "2222:22"
+      - "9000:9000"
+    environment:
+      - SSH_HOST_KEY_PEM=${SSH_HOST_KEY_PEM}
+    restart: unless-stopped
