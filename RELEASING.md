@@ -10,8 +10,6 @@ This project uses GoReleaser to build and publish cross-platform binaries for bo
 
 ## Creating a Release
 
-### Option 1: Tag Before Merge (Recommended)
-
 1. **Create your PR** with the changes
 2. **Tag the PR commit** (or wait until after merge and tag the merge commit):
    ```bash
@@ -38,22 +36,6 @@ This project uses GoReleaser to build and publish cross-platform binaries for bo
    - Build binaries for all platforms
    - Create GitHub releases (one per component)
    - Upload all binaries and checksums
-
-### Option 2: Tag After Merge
-
-1. **Merge your PR** to main
-2. **Tag the merge commit**:
-   ```bash
-   git checkout main
-   git pull
-   git tag client/v0.2.0
-   git push origin client/v0.2.0
-   ```
-3. **Push to main again** to trigger the workflow:
-   ```bash
-   git commit --allow-empty -m "Trigger release"
-   git push origin main
-   ```
 
 ### Releasing Both Client and Server
 
