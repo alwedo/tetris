@@ -15,7 +15,6 @@ var version = "dev"
 
 const (
 	versionFlag = "version"
-	noGhostFlag = "noghost"
 	nameFlag    = "name"
 	addressFlag = "address"
 )
@@ -37,7 +36,6 @@ func main() {
 
 func evalOptions() {
 	flag.BoolFunc(versionFlag, "Prints version", versionFunc)
-	flag.BoolVar(&noGhost, noGhostFlag, false, "Disables Ghost Piece")
 	flag.StringVar(&name, nameFlag, "noName", "Current player's name")
 	flag.StringVar(&address, addressFlag, "127.0.0.1", "Tetris server address")
 	if err := flag.CommandLine.Parse(os.Args[1:]); err != nil {
