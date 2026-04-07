@@ -19,12 +19,12 @@ builds:
       - arm64
     ldflags:
       - -s -w
-      - -X main.version={{ .Version }}
+      - -X main.version={{ .Env.VERSION }}
 
 archives:
   - id: archive
     name_template: >-
-      {{ .Env.BINARY_NAME }}-{{.Version}}-{{.Os}}-{{.Arch}}
+      {{ .Env.BINARY_NAME }}-{{ .Env.VERSION }}-{{.Os}}-{{.Arch}}
     files:
       - LICENSE*
       - README*
@@ -40,5 +40,5 @@ release:
   github:
     owner: alwedo
     name: tetris
-  name_template: "Tetris {{ title .Env.COMPONENT }} {{.Version}}"
+  name_template: "Tetris {{ title .Env.COMPONENT }} {{ .Env.VERSION }}"
   prerelease: auto

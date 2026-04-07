@@ -40,9 +40,9 @@ jobs:
                     exit 1
                   fi
 
-                  echo "Component: $COMPONENT, Version: $VERSION"
-                  MATRIX_INCLUDE=$(jq -nc --arg component "$COMPONENT" --arg binary "$BINARY_NAME" --arg version "v$VERSION" \
-                    '[{"component": $component, "binary_name": $binary, "version": $version}]')
+                  echo "Component: $COMPONENT, Version: v$VERSION, Full tag: $TAG_NAME"
+                  MATRIX_INCLUDE=$(jq -nc --arg component "$COMPONENT" --arg binary "$BINARY_NAME" --arg version "v$VERSION" --arg tag "$TAG_NAME" \
+                    '[{"component": $component, "binary_name": $binary, "version": $version, "tag": $tag}]')
                   echo "matrix={\"include\":$MATRIX_INCLUDE}" >> $GITHUB_OUTPUT
 
     release:
@@ -66,12 +66,13 @@ jobs:
               with:
                   distribution: goreleaser
                   version: latest
-                  args: release --clean
+                  args: release --clean --skip=validate
               env:
                   GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  GORELEASER_CURRENT_TAG: ${{ matrix.version }}
+                  GORELEASER_CURRENT_TAG: ${{ matrix.tag }}
                   COMPONENT: ${{ matrix.component }}
                   BINARY_NAME: ${{ matrix.binary_name }}
+                  VERSION: ${{ matrix.version }}
 
     build-ssh-docker:
         needs: detect-tags
