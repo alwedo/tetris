@@ -2,12 +2,9 @@ name: Release
 
 on:
     push:
-        branches: ["main"]
-        paths-ignore:
-            - "**/README.md"
-            - "**/.gitignore"
-            - "doc/**"
-            - "bin/**"
+        tags:
+            - 'client/v*'
+            - 'server/v*'
 
 permissions:
     contents: write
@@ -23,32 +20,33 @@ jobs:
               with:
                   fetch-depth: 0
 
-            - name: Detect tags and build matrix
+            - name: Detect component from tag
               id: set-matrix
               run: |
-                  git fetch --tags
-                  TAGS=$(git tag --points-at HEAD)
-                  echo "Tags at HEAD: $TAGS"
-                  MATRIX_INCLUDE="[]"
+                  TAG_REF="${{ github.ref }}"
+                  TAG_NAME="${TAG_REF#refs/tags/}"
+                  echo "Triggered by tag: $TAG_NAME"
 
-                  if echo "$TAGS" | grep -q '^client/v'; then
-                    CLIENT_TAG=$(echo "$TAGS" | grep '^client/v' | head -n1 | sed 's/^client\///')
-                    echo "Found client tag: $CLIENT_TAG"
-                    MATRIX_INCLUDE=$(echo "$MATRIX_INCLUDE" | jq -c '. += [{"component": "client", "binary_name": "tetris", "version": "'$CLIENT_TAG'"}]')
+                  if [[ "$TAG_NAME" =~ ^client/v(.+)$ ]]; then
+                    COMPONENT="client"
+                    BINARY_NAME="tetris"
+                    VERSION="${BASH_REMATCH[1]}"
+                  elif [[ "$TAG_NAME" =~ ^server/v(.+)$ ]]; then
+                    COMPONENT="server"
+                    BINARY_NAME="tetris-server"
+                    VERSION="${BASH_REMATCH[1]}"
+                  else
+                    echo "Tag does not match client/v* or server/v* pattern"
+                    exit 1
                   fi
 
-                  if echo "$TAGS" | grep -q '^server/v'; then
-                    SERVER_TAG=$(echo "$TAGS" | grep '^server/v' | head -n1 | sed 's/^server\///')
-                    echo "Found server tag: $SERVER_TAG"
-                    MATRIX_INCLUDE=$(echo "$MATRIX_INCLUDE" | jq -c '. += [{"component": "server", "binary_name": "tetris-server", "version": "'$SERVER_TAG'"}]')
-                  fi
-
-                  echo "Final matrix: $MATRIX_INCLUDE"
+                  echo "Component: $COMPONENT, Version: $VERSION"
+                  MATRIX_INCLUDE=$(jq -nc --arg component "$COMPONENT" --arg binary "$BINARY_NAME" --arg version "v$VERSION" \
+                    '[{"component": $component, "binary_name": $binary, "version": $version}]')
                   echo "matrix={\"include\":$MATRIX_INCLUDE}" >> $GITHUB_OUTPUT
 
     release:
         needs: detect-tags
-        if: needs.detect-tags.outputs.matrix != '{"include":[]}'
         runs-on: ubuntu-latest
         strategy:
             matrix: ${{ fromJson(needs.detect-tags.outputs.matrix) }}
@@ -77,7 +75,6 @@ jobs:
 
     build-ssh-docker:
         needs: detect-tags
-        if: needs.detect-tags.outputs.matrix != '{"include":[]}'
         runs-on: ubuntu-latest
         steps:
             - name: Checkout
