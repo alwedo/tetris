@@ -28,7 +28,7 @@
 //		defer cancel()
 //		t := tetris.Start(ctx)
 //
-//		// asynchronously send commands to the game
+//		// asynchronously receive updates from the game
 //		go func() {
 //			for {
 //				select {
@@ -36,7 +36,7 @@
 //					if !ok { // game over
 //						return
 //					}
-//					// use tetris status
+//					// use the Tetris status
 //					fmt.Println(msg)
 //				case <-ctx.Done():
 //					// use cancel func to end the game if needed
@@ -45,6 +45,7 @@
 //			}
 //		}()
 //
+//		// send commands to the game
 //		t.Do(tetris.MoveRight()) // or any other action
 //	}
 package tetris
