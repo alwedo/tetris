@@ -26,7 +26,9 @@ jobs:
             - name: Detect tags and build matrix
               id: set-matrix
               run: |
+                  git fetch --tags
                   TAGS=$(git tag --points-at HEAD)
+                  echo "Tags at HEAD: $TAGS"
                   MATRIX_INCLUDE="[]"
 
                   if echo "$TAGS" | grep -q '^client/v'; then
@@ -41,6 +43,7 @@ jobs:
                     MATRIX_INCLUDE=$(echo "$MATRIX_INCLUDE" | jq -c '. += [{"component": "server", "binary_name": "tetris-server", "version": "'$SERVER_TAG'"}]')
                   fi
 
+                  echo "Final matrix: $MATRIX_INCLUDE"
                   echo "matrix={\"include\":$MATRIX_INCLUDE}" >> $GITHUB_OUTPUT
 
     release:
