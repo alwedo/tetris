@@ -4,8 +4,6 @@
 
 Play Tetris from the comfort of your terminal!
 
-![example](./doc/example.gif)
-
 ⚠️ this assumes you know how to use the terminal! If you don't you can find out how [here](https://www.google.com/search?q=how+to+use+the+terminal).
 
 ## I don't care about your project just let me play Terminal Tetris NOW!
