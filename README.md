@@ -1,6 +1,6 @@
 # Terminal Tetris
 
-![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/alwedo/tetris) ![Test](https://github.com/alwedo/tetris/actions/workflows/test.yml/badge.svg) ![Client Release](https://img.shields.io/github/v/release/alwedo/tetris?filter=client/*&color=blue&label=Client%20Release) ![Server Release](https://img.shields.io/github/v/release/alwedo/tetris?filter=server/*&color=green&label=Server%20Release)
+![GitHub go.mod Go version](https://img.shields.io/github/go-mod/go-version/alwedo/tetris) ![Test](https://github.com/alwedo/tetris/actions/workflows/test.yml/badge.svg) [![Client](https://img.shields.io/github/v/release/alwedo/tetris?filter=client%2Fv*&color=blue&label=Client)](https://github.com/alwedo/tetris/releases?q=client%2F&expanded=true) [![Server](https://img.shields.io/github/v/release/alwedo/tetris?filter=server%2Fv*&color=green&label=Server)](https://github.com/alwedo/tetris/releases?q=server%2F&expanded=true)
 
 Play Tetris from the comfort of your terminal!
 
