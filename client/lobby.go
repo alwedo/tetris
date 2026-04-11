@@ -203,9 +203,9 @@ func (m *LobbyModel) View() tea.View {
 		rStack = renderRemoteStack(m.remoteGameState)
 	}
 
-	base := lipgloss.JoinHorizontal(lipgloss.Bottom,
+	base := lipgloss.JoinHorizontal(lipgloss.Top,
 		renderStack(m.localGameState.Tetris),
-		m.renderCenterPanel(),
+		m.renderMenuPanel(),
 		rStack,
 	)
 	bw := lipgloss.Width(base)
@@ -245,27 +245,20 @@ func (m *LobbyModel) View() tea.View {
 	nw := lipgloss.Width(overlay)
 	nh := lipgloss.Height(overlay)
 
-	return tea.NewView(lipgloss.NewCompositor(
-		lipgloss.NewLayer(base),
-		lipgloss.NewLayer(overlay).X((bw-nw)/2).Y((bh-nh)/2).Z(1),
-	).Render())
-}
-
-func (m *LobbyModel) renderCenterPanel() string {
-	// Always render menu panel (overlays will appear on top)
-	// TODO: refactor
-	top := m.renderMenuPanel()
-
-	helpText := m.help.View(m.keys)
-
-	bottom := lipgloss.NewStyle().
-		Width(22).
+	help := lipgloss.NewStyle().
+		Width(bw).
 		Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
+		Border(lipgloss.NormalBorder(), true, false, false).
 		Foreground(lipgloss.Color("#FF75B7")).
-		Render(helpText)
+		Render(m.help.View(m.keys))
 
-	return lipgloss.JoinVertical(lipgloss.Center, top, bottom)
+	mainscreen := lipgloss.NewCompositor(
+		lipgloss.NewLayer(base),
+		lipgloss.NewLayer(help).Y(bh),
+		lipgloss.NewLayer(overlay).X((bw-nw)/2).Y((bh-nh)/2).Z(1),
+	).Render()
+
+	return tea.NewView(mainscreen)
 }
 
 func (m *LobbyModel) renderMenuPanel() string {

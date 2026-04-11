@@ -14,47 +14,39 @@ type gameKeyMap struct {
 }
 
 func (k gameKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
+	return []key.Binding{k.MoveLeft, k.RotateLeft, k.RotateRight, k.DropDown, k.Quit}
 }
 
 func (k gameKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.MoveLeft, k.MoveRight, k.RotateLeft, k.RotateRight, k.MoveDown, k.DropDown, k.Help, k.Quit},
-	}
+	return [][]key.Binding{}
 }
 
 var gameKeys = gameKeyMap{
 	MoveLeft: key.NewBinding(
-		key.WithKeys("left", "a"),
-		key.WithHelp("←/a", "move left"),
-	),
-	RotateLeft: key.NewBinding(
-		key.WithKeys("q"),
-		key.WithHelp("q", "rotate left"),
-	),
-	MoveRight: key.NewBinding(
-		key.WithKeys("right", "d"),
-		key.WithHelp("→/d", "move right"),
+		key.WithKeys("left"),
+		key.WithHelp("←/→/↓", "move"),
 	),
 	RotateRight: key.NewBinding(
-		key.WithKeys("up", "e"),
-		key.WithHelp("↑/e", "rotate right"),
+		key.WithKeys("up"),
+		key.WithHelp("↑", "↷"),
+	),
+	RotateLeft: key.NewBinding(
+		key.WithKeys("r"),
+		key.WithHelp("r", "↶"),
+	),
+	MoveRight: key.NewBinding(
+		key.WithKeys("right"),
 	),
 	MoveDown: key.NewBinding(
-		key.WithKeys("down", "s"),
-		key.WithHelp("↓/s", "move down"),
+		key.WithKeys("down"),
 	),
 	DropDown: key.NewBinding(
 		key.WithKeys("space"),
-		key.WithHelp("space", "drop down"),
-	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "help"),
+		key.WithHelp("space", "drop"),
 	),
 	Quit: key.NewBinding(
-		key.WithKeys("esc", "ctrl+c"),
-		key.WithHelp("esc", "quit"),
+		key.WithKeys("q"),
+		key.WithHelp("q", "quit"),
 	),
 }
 
@@ -67,34 +59,28 @@ type lobbyKeyMap struct {
 }
 
 func (k lobbyKeyMap) ShortHelp() []key.Binding {
-	return []key.Binding{k.Help, k.Quit}
+	return []key.Binding{k.Up, k.Down, k.Select, k.Quit}
 }
 
 func (k lobbyKeyMap) FullHelp() [][]key.Binding {
-	return [][]key.Binding{
-		{k.Up, k.Down, k.Select, k.Help, k.Quit},
-	}
+	return [][]key.Binding{}
 }
 
 var lobbyKeys = lobbyKeyMap{
 	Up: key.NewBinding(
-		key.WithKeys("up", "w"),
-		key.WithHelp("↑/w", "move up"),
+		key.WithKeys("up"),
+		key.WithHelp("↑", "up"),
 	),
 	Down: key.NewBinding(
-		key.WithKeys("down", "s"),
-		key.WithHelp("↓/s", "move down"),
+		key.WithKeys("down"),
+		key.WithHelp("↓", "down"),
 	),
 	Select: key.NewBinding(
 		key.WithKeys("enter"),
 		key.WithHelp("↵", "select"),
 	),
-	Help: key.NewBinding(
-		key.WithKeys("?"),
-		key.WithHelp("?", "toggle help"),
-	),
 	Quit: key.NewBinding(
-		key.WithKeys("esc"),
-		key.WithHelp("esc", "quit"),
+		key.WithKeys("q"),
+		key.WithHelp("q", "quit"),
 	),
 }

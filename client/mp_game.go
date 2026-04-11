@@ -188,7 +188,19 @@ func (m *MPPlayingModel) View() tea.View {
 		rightPanel,
 	)
 
-	return tea.NewView(composed)
+	cw := lipgloss.Width(composed)
+	ch := lipgloss.Height(composed)
+	help := lipgloss.NewStyle().
+		Width(cw).
+		Align(lipgloss.Center).
+		Border(lipgloss.NormalBorder(), true, false, false).
+		Foreground(lipgloss.Color("#FF75B7")).
+		Render(m.help.View(m.keys))
+
+	return tea.NewView(lipgloss.NewCompositor(
+		lipgloss.NewLayer(composed),
+		lipgloss.NewLayer(help).Y(ch),
+	).Render())
 }
 
 func (m *MPPlayingModel) renderCenterPanel() string {
@@ -214,12 +226,7 @@ func (m *MPPlayingModel) renderCenterPanel() string {
 			nextPiece,
 		))
 
-	help := lipgloss.NewStyle().Width(22).Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Foreground(lipgloss.Color("#FF75B7")).
-		Render(m.help.View(m.keys))
-
-	return lipgloss.JoinVertical(lipgloss.Center, stats, help)
+	return lipgloss.JoinVertical(lipgloss.Center, stats)
 }
 
 func (m *MPPlayingModel) cleanup() {
