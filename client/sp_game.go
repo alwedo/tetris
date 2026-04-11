@@ -144,6 +144,7 @@ func (m *SingleGameModel) listenToGameUpdates() tea.Cmd {
 		case msg, ok := <-m.game.GameMessageCh:
 			if !ok {
 				// Channel closed = game over
+				m.cancel()
 				return TransitionToLobbyMsg{
 					LocalGameState: m.gameState,
 					Message:        "Game Over!",
