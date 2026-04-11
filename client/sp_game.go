@@ -119,12 +119,7 @@ func (m *SingleGameModel) View() tea.View {
 
 	cw := lipgloss.Width(composed)
 	ch := lipgloss.Height(composed)
-	help := lipgloss.NewStyle().
-		Width(cw).
-		Align(lipgloss.Center).
-		Border(lipgloss.NormalBorder(), true, false, false).
-		Foreground(lipgloss.Color("#FF75B7")).
-		Render(m.help.View(m.keys))
+	help := helpStyle.Width(cw).Render(m.help.View(m.keys))
 
 	return tea.NewView(lipgloss.NewCompositor(
 		lipgloss.NewLayer(composed),

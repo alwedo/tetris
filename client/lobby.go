@@ -244,13 +244,7 @@ func (m *LobbyModel) View() tea.View {
 
 	nw := lipgloss.Width(overlay)
 	nh := lipgloss.Height(overlay)
-
-	help := lipgloss.NewStyle().
-		Width(bw).
-		Align(lipgloss.Center).
-		Border(lipgloss.NormalBorder(), true, false, false).
-		Foreground(lipgloss.Color("#FF75B7")).
-		Render(m.help.View(m.keys))
+	help := helpStyle.Width(bw).Render(m.help.View(m.keys))
 
 	mainscreen := lipgloss.NewCompositor(
 		lipgloss.NewLayer(base),
