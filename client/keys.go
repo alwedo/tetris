@@ -9,7 +9,6 @@ type gameKeyMap struct {
 	MoveRight   key.Binding
 	MoveDown    key.Binding
 	DropDown    key.Binding
-	Help        key.Binding
 	Quit        key.Binding
 }
 
@@ -54,7 +53,6 @@ type lobbyKeyMap struct {
 	Up     key.Binding
 	Down   key.Binding
 	Select key.Binding
-	Help   key.Binding
 	Quit   key.Binding
 }
 
