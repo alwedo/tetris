@@ -2,7 +2,6 @@ package client
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"charm.land/bubbles/v2/help"
@@ -109,35 +108,19 @@ func (m *SingleGameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *SingleGameModel) View() tea.View {
-	leftPanel := renderStack(m.gameState.Tetris)
-	centerPanel := m.renderCenterPanel()
-
-	composed := lipgloss.JoinHorizontal(lipgloss.Bottom,
-		leftPanel,
-		centerPanel,
+	center := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		renderStack(m.gameState.Tetris),
+		renderCenterPanel(m.gameState.Tetris, "", nil),
 	)
 
-	cw := lipgloss.Width(composed)
-	ch := lipgloss.Height(composed)
+	cw, ch := lipgloss.Size(center)
 	help := helpStyle.Width(cw).Render(m.help.View(m.keys))
 
 	return tea.NewView(lipgloss.NewCompositor(
-		lipgloss.NewLayer(composed),
+		lipgloss.NewLayer(center),
 		lipgloss.NewLayer(help).Y(ch),
 	).Render())
-}
-
-func (m *SingleGameModel) renderCenterPanel() string {
-	stats := lipgloss.NewStyle().Width(22).Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Render(lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(appName),
-			fmt.Sprintf("Level: %d\nLines Cleared: %d",
-				m.gameState.Tetris.Level, m.gameState.Tetris.Lines),
-			renderNextPiece(m.gameState.Tetris),
-		))
-
-	return lipgloss.JoinVertical(lipgloss.Center, stats)
 }
 
 func (m *SingleGameModel) listenToGameUpdates() tea.Cmd {

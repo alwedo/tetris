@@ -6,8 +6,6 @@ import (
 	tea "charm.land/bubbletea/v2"
 )
 
-const appName = "Terminal Tetris"
-
 type RootModel struct {
 	currentModel tea.Model
 	lobbyModel   *LobbyModel
@@ -62,7 +60,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 
 func (m *RootModel) View() tea.View {
 	view := m.currentModel.View()
-	view.WindowTitle = appName
+	view.WindowTitle = gameName
 	view.AltScreen = true
 	return view
 }

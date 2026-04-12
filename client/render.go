@@ -1,13 +1,21 @@
 package client
 
 import (
+	"fmt"
 	"image/color"
 	"slices"
+	"strconv"
 	"strings"
 
 	"charm.land/lipgloss/v2"
 	"github.com/alwedo/tetris"
 	"github.com/alwedo/tetris/pb"
+)
+
+const (
+	gameName            = "Terminal Tetris"
+	centerPanelMinWidth = 22
+	centerPanelHeight   = 22
 )
 
 var colorMap = map[tetris.Shape]color.Color{
@@ -108,4 +116,47 @@ func renderRemoteStack(t *pb.GameMessage) string {
 	return lipgloss.NewStyle().
 		Border(lipgloss.RoundedBorder()).
 		Render(lipgloss.JoinVertical(lipgloss.Center, rows...))
+}
+
+func renderCenterPanel(local tetris.Tetris, name string, remote *pb.GameMessage) string {
+	var stats string
+
+	switch remote {
+	case nil:
+		statKeys := lipgloss.NewStyle().Align(lipgloss.Right).Render("Level: \nLines: \nNext: ")
+		statValues := lipgloss.NewStyle().Render(
+			lipgloss.JoinVertical(
+				lipgloss.Left,
+				lipgloss.NewStyle().Bold(true).Render(strconv.Itoa(local.Level)),
+				lipgloss.NewStyle().Bold(true).Render(strconv.Itoa(local.Lines)),
+				renderNextPiece(local),
+			),
+		)
+		stats = lipgloss.JoinHorizontal(lipgloss.Top, statKeys, statValues)
+	default:
+		stats = lipgloss.JoinVertical(
+			lipgloss.Center,
+			// TODO: format this better
+			fmt.Sprintf("%s vs %s", name, remote.GetName()),
+			fmt.Sprintf("%d: Lines :%d", local.Lines, remote.GetLinesClear()),
+			fmt.Sprintf("Next:\n%s", renderNextPiece(local)),
+		)
+	}
+
+	w := centerPanelMinWidth
+	sw := lipgloss.Width(stats)
+	if sw > w {
+		w = sw
+	}
+	title := lipgloss.NewStyle().Align(lipgloss.Center).Width(w).Bold(true).PaddingTop(1).Render(gameName)
+
+	styleStats := lipgloss.NewStyle().
+		Width(w).
+		Align(lipgloss.Center).
+		PaddingTop(2).
+		Render(lipgloss.JoinVertical(lipgloss.Top, stats))
+
+	return lipgloss.NewStyle().
+		Height(centerPanelHeight).
+		Render(lipgloss.JoinVertical(lipgloss.Top, title, styleStats))
 }

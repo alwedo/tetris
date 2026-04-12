@@ -178,50 +178,20 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *MPPlayingModel) View() tea.View {
-	leftPanel := renderStack(m.localState.Tetris)
-	rightPanel := renderRemoteStack(m.remoteState)
-	centerPanel := m.renderCenterPanel()
-
-	composed := lipgloss.JoinHorizontal(lipgloss.Bottom,
-		leftPanel,
-		centerPanel,
-		rightPanel,
+	center := lipgloss.JoinHorizontal(
+		lipgloss.Top,
+		renderStack(m.localState.Tetris),
+		renderCenterPanel(m.localState.Tetris, m.playerName, m.remoteState),
+		renderRemoteStack(m.remoteState),
 	)
 
-	cw := lipgloss.Width(composed)
-	ch := lipgloss.Height(composed)
+	cw, ch := lipgloss.Size(center)
 	help := helpStyle.Width(cw).Render(m.help.View(m.keys))
 
 	return tea.NewView(lipgloss.NewCompositor(
-		lipgloss.NewLayer(composed),
+		lipgloss.NewLayer(center),
 		lipgloss.NewLayer(help).Y(ch),
 	).Render())
-}
-
-func (m *MPPlayingModel) renderCenterPanel() string {
-	gameName := lipgloss.NewStyle().Bold(true).Render(appName)
-	nextPiece := renderNextPiece(m.localState.Tetris)
-
-	opponentName := "Opponent"
-	if m.remoteState != nil && m.remoteState.GetName() != "" {
-		opponentName = m.remoteState.GetName()
-	}
-
-	opponentLines := int32(0)
-	if m.remoteState != nil {
-		opponentLines = m.remoteState.GetLinesClear()
-	}
-
-	stats := lipgloss.NewStyle().Width(22).Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Render(lipgloss.JoinVertical(lipgloss.Center,
-			gameName,
-			fmt.Sprintf("You: %d lines", m.localState.Tetris.Lines),
-			fmt.Sprintf("%s: %d lines", opponentName, opponentLines),
-			nextPiece,
-		))
-
-	return lipgloss.JoinVertical(lipgloss.Center, stats)
 }
 
 func (m *MPPlayingModel) cleanup() {
