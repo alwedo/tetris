@@ -18,15 +18,15 @@ const defaultTimeOut = 30 * time.Second
 
 type game struct {
 	p1Ch, p2Ch   chan *pb.GameMessage
-	waitOpponent atomic.Bool
+	waitOpponent chan struct{}
 }
 
 func newGame() *game {
 	g := &game{
-		p1Ch: make(chan *pb.GameMessage),
-		p2Ch: make(chan *pb.GameMessage),
+		p1Ch:         make(chan *pb.GameMessage),
+		p2Ch:         make(chan *pb.GameMessage),
+		waitOpponent: make(chan struct{}),
 	}
-	g.waitOpponent.Store(true)
 	return g
 }
 
@@ -58,7 +58,7 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 	default:
 		gameInstance = t.waitList.Swap(nil)
 		playerCh, opponentCh = gameInstance.p2Ch, gameInstance.p1Ch
-		gameInstance.waitOpponent.Store(false)
+		close(gameInstance.waitOpponent)
 	}
 	t.mu.Unlock()
 
@@ -71,22 +71,17 @@ func (t *tetrisServer) PlayTetris(stream grpc.BidiStreamingServer[pb.GameMessage
 
 	// Wait for opponent
 	to := time.After(t.waitTimeout)
-	for gameInstance.waitOpponent.Load() {
-		var code codes.Code
-		var msg string
-
-		select {
-		case <-to:
-			code, msg = codes.DeadlineExceeded, "timeout waiting for opponent"
-			log.Printf("%s timed out waiting to start game %p\n", name, gameInstance)
-		case <-stream.Context().Done():
-			code, msg = codes.Canceled, "player disconnected"
-			log.Printf("%s disconnected waiting to start game %p\n", name, gameInstance)
-		default:
-			continue
-		}
+	select {
+	case <-gameInstance.waitOpponent:
+		// Opponent arrived, continue.
+	case <-to:
+		log.Printf("%s timed out waiting to start game %p\n", name, gameInstance)
 		t.waitList.CompareAndSwap(gameInstance, nil)
-		return status.Error(code, msg)
+		return status.Error(codes.DeadlineExceeded, "timeout waiting for opponent")
+	case <-stream.Context().Done():
+		log.Printf("%s disconnected waiting to start game %p\n", name, gameInstance)
+		t.waitList.CompareAndSwap(gameInstance, nil)
+		return status.Error(codes.Canceled, "player disconnected")
 	}
 
 	if err := stream.Send(pb.GameMessage_builder{IsStarted: new(true)}.Build()); err != nil {
