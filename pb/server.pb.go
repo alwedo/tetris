@@ -22,16 +22,16 @@ const (
 )
 
 type GameMessage struct {
-	state                   protoimpl.MessageState `protogen:"opaque.v1"`
-	xxx_hidden_Name         *string                `protobuf:"bytes,1,opt,name=name"`
-	xxx_hidden_IsStarted    bool                   `protobuf:"varint,2,opt,name=is_started,json=isStarted"`
-	xxx_hidden_ClearedLines *ClearedLines          `protobuf:"bytes,3,opt,name=cleared_lines,json=clearedLines"`
-	xxx_hidden_LinesClear   int32                  `protobuf:"varint,4,opt,name=lines_clear,json=linesClear"`
-	xxx_hidden_Stack        *Stack                 `protobuf:"bytes,5,opt,name=stack"`
-	XXX_raceDetectHookData  protoimpl.RaceDetectHookData
-	XXX_presence            [1]uint32
-	unknownFields           protoimpl.UnknownFields
-	sizeCache               protoimpl.SizeCache
+	state                         protoimpl.MessageState `protogen:"opaque.v1"`
+	xxx_hidden_Name               *string                `protobuf:"bytes,1,opt,name=name"`
+	xxx_hidden_IsStarted          bool                   `protobuf:"varint,2,opt,name=is_started,json=isStarted"`
+	xxx_hidden_ClearedRowsIndexes *ClearedRowsIndexes    `protobuf:"bytes,3,opt,name=cleared_rows_indexes,json=clearedRowsIndexes"`
+	xxx_hidden_LinesClear         int32                  `protobuf:"varint,4,opt,name=lines_clear,json=linesClear"`
+	xxx_hidden_Stack              *Stack                 `protobuf:"bytes,5,opt,name=stack"`
+	XXX_raceDetectHookData        protoimpl.RaceDetectHookData
+	XXX_presence                  [1]uint32
+	unknownFields                 protoimpl.UnknownFields
+	sizeCache                     protoimpl.SizeCache
 }
 
 func (x *GameMessage) Reset() {
@@ -76,9 +76,9 @@ func (x *GameMessage) GetIsStarted() bool {
 	return false
 }
 
-func (x *GameMessage) GetClearedLines() *ClearedLines {
+func (x *GameMessage) GetClearedRowsIndexes() *ClearedRowsIndexes {
 	if x != nil {
-		return x.xxx_hidden_ClearedLines
+		return x.xxx_hidden_ClearedRowsIndexes
 	}
 	return nil
 }
@@ -107,8 +107,8 @@ func (x *GameMessage) SetIsStarted(v bool) {
 	protoimpl.X.SetPresent(&(x.XXX_presence[0]), 1, 5)
 }
 
-func (x *GameMessage) SetClearedLines(v *ClearedLines) {
-	x.xxx_hidden_ClearedLines = v
+func (x *GameMessage) SetClearedRowsIndexes(v *ClearedRowsIndexes) {
+	x.xxx_hidden_ClearedRowsIndexes = v
 }
 
 func (x *GameMessage) SetLinesClear(v int32) {
@@ -134,11 +134,11 @@ func (x *GameMessage) HasIsStarted() bool {
 	return protoimpl.X.Present(&(x.XXX_presence[0]), 1)
 }
 
-func (x *GameMessage) HasClearedLines() bool {
+func (x *GameMessage) HasClearedRowsIndexes() bool {
 	if x == nil {
 		return false
 	}
-	return x.xxx_hidden_ClearedLines != nil
+	return x.xxx_hidden_ClearedRowsIndexes != nil
 }
 
 func (x *GameMessage) HasLinesClear() bool {
@@ -165,8 +165,8 @@ func (x *GameMessage) ClearIsStarted() {
 	x.xxx_hidden_IsStarted = false
 }
 
-func (x *GameMessage) ClearClearedLines() {
-	x.xxx_hidden_ClearedLines = nil
+func (x *GameMessage) ClearClearedRowsIndexes() {
+	x.xxx_hidden_ClearedRowsIndexes = nil
 }
 
 func (x *GameMessage) ClearLinesClear() {
@@ -181,11 +181,11 @@ func (x *GameMessage) ClearStack() {
 type GameMessage_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
-	Name         *string
-	IsStarted    *bool
-	ClearedLines *ClearedLines
-	LinesClear   *int32
-	Stack        *Stack
+	Name               *string
+	IsStarted          *bool
+	ClearedRowsIndexes *ClearedRowsIndexes
+	LinesClear         *int32
+	Stack              *Stack
 }
 
 func (b0 GameMessage_builder) Build() *GameMessage {
@@ -200,7 +200,7 @@ func (b0 GameMessage_builder) Build() *GameMessage {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 1, 5)
 		x.xxx_hidden_IsStarted = *b.IsStarted
 	}
-	x.xxx_hidden_ClearedLines = b.ClearedLines
+	x.xxx_hidden_ClearedRowsIndexes = b.ClearedRowsIndexes
 	if b.LinesClear != nil {
 		protoimpl.X.SetPresentNonAtomic(&(x.XXX_presence[0]), 3, 5)
 		x.xxx_hidden_LinesClear = *b.LinesClear
@@ -325,27 +325,27 @@ func (b0 Row_builder) Build() *Row {
 	return m0
 }
 
-type ClearedLines struct {
+type ClearedRowsIndexes struct {
 	state            protoimpl.MessageState `protogen:"opaque.v1"`
 	xxx_hidden_Cells []int32                `protobuf:"varint,1,rep,packed,name=cells"`
 	unknownFields    protoimpl.UnknownFields
 	sizeCache        protoimpl.SizeCache
 }
 
-func (x *ClearedLines) Reset() {
-	*x = ClearedLines{}
+func (x *ClearedRowsIndexes) Reset() {
+	*x = ClearedRowsIndexes{}
 	mi := &file_pb_server_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *ClearedLines) String() string {
+func (x *ClearedRowsIndexes) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*ClearedLines) ProtoMessage() {}
+func (*ClearedRowsIndexes) ProtoMessage() {}
 
-func (x *ClearedLines) ProtoReflect() protoreflect.Message {
+func (x *ClearedRowsIndexes) ProtoReflect() protoreflect.Message {
 	mi := &file_pb_server_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -357,25 +357,25 @@ func (x *ClearedLines) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-func (x *ClearedLines) GetCells() []int32 {
+func (x *ClearedRowsIndexes) GetCells() []int32 {
 	if x != nil {
 		return x.xxx_hidden_Cells
 	}
 	return nil
 }
 
-func (x *ClearedLines) SetCells(v []int32) {
+func (x *ClearedRowsIndexes) SetCells(v []int32) {
 	x.xxx_hidden_Cells = v
 }
 
-type ClearedLines_builder struct {
+type ClearedRowsIndexes_builder struct {
 	_ [0]func() // Prevents comparability and use of unkeyed literals for the builder.
 
 	Cells []int32
 }
 
-func (b0 ClearedLines_builder) Build() *ClearedLines {
-	m0 := &ClearedLines{}
+func (b0 ClearedRowsIndexes_builder) Build() *ClearedRowsIndexes {
+	m0 := &ClearedRowsIndexes{}
 	b, x := &b0, m0
 	_, _ = b, x
 	x.xxx_hidden_Cells = b.Cells
@@ -386,20 +386,20 @@ var File_pb_server_proto protoreflect.FileDescriptor
 
 const file_pb_server_proto_rawDesc = "" +
 	"\n" +
-	"\x0fpb/server.proto\x12\x02pb\x1a!google/protobuf/go_features.proto\"\xb9\x01\n" +
+	"\x0fpb/server.proto\x12\x02pb\x1a!google/protobuf/go_features.proto\"\xcc\x01\n" +
 	"\vGameMessage\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x1d\n" +
 	"\n" +
-	"is_started\x18\x02 \x01(\bR\tisStarted\x125\n" +
-	"\rcleared_lines\x18\x03 \x01(\v2\x10.pb.ClearedLinesR\fclearedLines\x12\x1f\n" +
+	"is_started\x18\x02 \x01(\bR\tisStarted\x12H\n" +
+	"\x14cleared_rows_indexes\x18\x03 \x01(\v2\x16.pb.ClearedRowsIndexesR\x12clearedRowsIndexes\x12\x1f\n" +
 	"\vlines_clear\x18\x04 \x01(\x05R\n" +
 	"linesClear\x12\x1f\n" +
 	"\x05stack\x18\x05 \x01(\v2\t.pb.StackR\x05stack\"$\n" +
 	"\x05Stack\x12\x1b\n" +
 	"\x04rows\x18\x01 \x03(\v2\a.pb.RowR\x04rows\"\x1b\n" +
 	"\x03Row\x12\x14\n" +
-	"\x05cells\x18\x01 \x03(\tR\x05cells\"$\n" +
-	"\fClearedLines\x12\x14\n" +
+	"\x05cells\x18\x01 \x03(\tR\x05cells\"*\n" +
+	"\x12ClearedRowsIndexes\x12\x14\n" +
 	"\x05cells\x18\x01 \x03(\x05R\x05cells2E\n" +
 	"\rTetrisService\x124\n" +
 	"\n" +
@@ -407,13 +407,13 @@ const file_pb_server_proto_rawDesc = "" +
 
 var file_pb_server_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
 var file_pb_server_proto_goTypes = []any{
-	(*GameMessage)(nil),  // 0: pb.GameMessage
-	(*Stack)(nil),        // 1: pb.Stack
-	(*Row)(nil),          // 2: pb.Row
-	(*ClearedLines)(nil), // 3: pb.ClearedLines
+	(*GameMessage)(nil),        // 0: pb.GameMessage
+	(*Stack)(nil),              // 1: pb.Stack
+	(*Row)(nil),                // 2: pb.Row
+	(*ClearedRowsIndexes)(nil), // 3: pb.ClearedRowsIndexes
 }
 var file_pb_server_proto_depIdxs = []int32{
-	3, // 0: pb.GameMessage.cleared_lines:type_name -> pb.ClearedLines
+	3, // 0: pb.GameMessage.cleared_rows_indexes:type_name -> pb.ClearedRowsIndexes
 	1, // 1: pb.GameMessage.stack:type_name -> pb.Stack
 	2, // 2: pb.Stack.rows:type_name -> pb.Row
 	0, // 3: pb.TetrisService.PlayTetris:input_type -> pb.GameMessage

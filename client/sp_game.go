@@ -130,18 +130,3 @@ func (m *SingleGameModel) listenToGameUpdates() tea.Cmd {
 		}
 	}
 }
-
-// AnimationMessage for line clear animation
-type AnimationMessage struct {
-	frames        int
-	completedRows map[int][]tetris.Shape
-}
-
-func newAnimationMsg(c map[int][]tetris.Shape) tea.Cmd {
-	return func() tea.Msg {
-		return AnimationMessage{
-			frames:        8,
-			completedRows: c,
-		}
-	}
-}

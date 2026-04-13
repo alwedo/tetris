@@ -5,6 +5,8 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/help"
@@ -17,6 +19,9 @@ import (
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
+
+type localAnimationMessage struct{}
+type remoteAnimationMessage struct{}
 
 const (
 	messageYouQuit = "You quit! 🐔"
@@ -39,6 +44,11 @@ type MPPlayingModel struct {
 	cancel      context.CancelFunc
 	keys        gameKeyMap
 	help        help.Model
+
+	localAnimationFrames  int
+	localAnimationLayout  []int
+	remoteAnimationFrames int
+	remoteAnimationLayout []int32
 }
 
 func NewMPPlayingModel(
@@ -89,40 +99,41 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		}
 
 		if len(msg.ClearedLines) > 0 {
-			// TODO: fix animation to be overlay mask instead of object manipulation
-			complete := make(map[int][]tetris.Shape)
-			for _, v := range msg.ClearedLines {
-				complete[v] = msg.Tetris.Stack[v]
-			}
-			return m, newAnimationMsg(complete)
+			m.localAnimationFrames = 8
+			m.localAnimationLayout = slices.Clone(msg.ClearedLines)
+			return m, func() tea.Msg { return localAnimationMessage{} }
 		}
 
 		return m, m.listenToGameUpdates()
 
-	case AnimationMessage:
-		if msg.frames == 0 {
+	case *pb.GameMessage:
+		m.localGame.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
+		m.remoteState = msg
+
+		if len(msg.GetClearedRowsIndexes().GetCells()) > 0 {
+			m.remoteAnimationFrames = 8
+			m.remoteAnimationLayout = slices.Clone(msg.GetClearedRowsIndexes().GetCells())
+			return m, func() tea.Msg { return remoteAnimationMessage{} }
+		}
+		return m, m.listenToStreamUpdates()
+
+	case localAnimationMessage:
+		m.localAnimationFrames--
+		if m.localAnimationFrames == 0 {
 			return m, m.listenToGameUpdates()
 		}
-		if m.localState.Tetris.Tetromino != nil {
-			m.localState.Tetris.Tetromino = nil
-		}
-		for k, v := range msg.completedRows {
-			if msg.frames%2 == 0 {
-				m.localState.Tetris.Stack[k] = make([]tetris.Shape, 10)
-			} else {
-				m.localState.Tetris.Stack[k] = v
-			}
-		}
-		msg.frames--
 		return m, tea.Tick(40*time.Millisecond, func(time.Time) tea.Msg {
 			return msg
 		})
 
-	case *pb.GameMessage:
-		// TODO: add animation
-		m.localGame.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
-		m.remoteState = msg
-		return m, m.listenToStreamUpdates()
+	case remoteAnimationMessage:
+		m.remoteAnimationFrames--
+		if m.remoteAnimationFrames == 0 {
+			return m, m.listenToStreamUpdates()
+		}
+		return m, tea.Tick(40*time.Millisecond, func(time.Time) tea.Msg {
+			return msg
+		})
 
 	case gameOverMessage:
 		return m, m.toLobby(msg.msg)
@@ -157,13 +168,22 @@ func (m *MPPlayingModel) View() tea.View {
 		renderRemoteStack(m.remoteState),
 	)
 
+	c := lipgloss.NewCompositor(lipgloss.NewLayer(center))
 	cw, ch := lipgloss.Size(center)
-	help := helpStyle.Width(cw).Render(m.help.View(m.keys))
 
-	return tea.NewView(lipgloss.NewCompositor(
-		lipgloss.NewLayer(center),
-		lipgloss.NewLayer(help).Y(ch),
-	).Render())
+	if m.localAnimationFrames > 0 && m.localAnimationFrames%2 == 0 {
+		for _, i := range m.localAnimationLayout {
+			c.AddLayers(lipgloss.NewLayer(strings.Repeat(" ", 20)).X(1).Y(20 - i))
+		}
+	}
+	if m.remoteAnimationFrames > 0 && m.remoteAnimationFrames%2 == 0 {
+		for _, i := range m.remoteAnimationLayout {
+			c.AddLayers(lipgloss.NewLayer(strings.Repeat(" ", 20)).X(cw - 21).Y(20 - int(i)))
+		}
+	}
+	c.AddLayers(lipgloss.NewLayer(helpStyle.Width(cw).Render(m.help.View(m.keys))).Y(ch))
+
+	return tea.NewView(c.Render())
 }
 
 func (m *MPPlayingModel) toLobby(msg string) tea.Cmd {
@@ -246,7 +266,15 @@ func tetris2Proto(t *tetris.GameMessage, name string) *pb.GameMessage {
 		}
 	}
 
+	cl := []int32{}
+	for _, v := range t.ClearedLines {
+		cl = append(cl, int32(v)) //nolint: gosec
+	}
+
 	return pb.GameMessage_builder{
+		ClearedRowsIndexes: pb.ClearedRowsIndexes_builder{
+			Cells: cl,
+		}.Build(),
 		Name:       new(name),
 		LinesClear: new(int32(t.Tetris.Lines)), // nolint: gosec
 		Stack:      rendered,

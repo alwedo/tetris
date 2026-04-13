@@ -14,7 +14,7 @@ service TetrisService {
 message GameMessage {
   string name = 1;
   bool is_started = 2;
-  ClearedLines cleared_lines = 3;
+  ClearedRowsIndexes cleared_rows_indexes = 3;
   int32 lines_clear = 4;
   Stack stack = 5;
 }
@@ -27,6 +27,6 @@ message Row {
   repeated string cells = 1;
 }
 
-message ClearedLines {
+message ClearedRowsIndexes {
   repeated int32 cells = 1;
 }
