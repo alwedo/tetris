@@ -197,6 +197,7 @@ func (m *LobbyModel) updateWaiting(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *LobbyModel) View() tea.View {
+	// Base layer: always show game screens
 	var rStack string
 	if m.remoteGameState != nil {
 		rStack = renderRemoteStack(m.remoteGameState)
@@ -204,20 +205,22 @@ func (m *LobbyModel) View() tea.View {
 
 	base := lipgloss.JoinHorizontal(lipgloss.Top,
 		renderStack(m.localGameState.Tetris),
-		m.renderMenuPanel(),
+		renderCenterPanel(m.localGameState.Tetris, "", m.remoteGameState),
 		rStack,
 	)
 	bw, bh := lipgloss.Size(base)
 
+	// Build overlay content based on state
 	var overlay string
 	switch {
-	// TODO: refactor
 	case m.lobbyState == LobbyStateMenu && m.notification != "":
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
 			lipgloss.Wrap(lipgloss.NewStyle().Bold(true).Render(m.notification), bw-8, " "),
 			"",
-			lipgloss.NewStyle().Faint(true).Render("Press Enter to continue"))
+			lipgloss.NewStyle().Faint(true).Render("Press any key to continue"))
+	case m.lobbyState == LobbyStateMenu:
+		overlay = m.renderMenuContent()
 	case m.lobbyState == LobbyStateConnecting:
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
@@ -232,8 +235,10 @@ func (m *LobbyModel) View() tea.View {
 			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"))
 	}
 
+	// Wrap overlay with border and background
 	if overlay != "" {
 		overlay = lipgloss.NewStyle().
+			Background(lipgloss.Color("")).
 			Border(lipgloss.RoundedBorder()).
 			BorderForeground(lipgloss.Color("69")).
 			Padding(1, 2).
@@ -252,7 +257,7 @@ func (m *LobbyModel) View() tea.View {
 	return tea.NewView(mainscreen)
 }
 
-func (m *LobbyModel) renderMenuPanel() string {
+func (m *LobbyModel) renderMenuContent() string {
 	var menu strings.Builder
 	for i, mode := range m.gameModes {
 		if i == m.selectedMode {
@@ -262,15 +267,7 @@ func (m *LobbyModel) renderMenuPanel() string {
 		}
 	}
 
-	return lipgloss.NewStyle().
-		Width(22).
-		Align(lipgloss.Center).
-		Border(lipgloss.RoundedBorder()).
-		Render(lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(gameName),
-			"\n",
-			menu.String(),
-		))
+	return menu.String()
 }
 
 func (m *LobbyModel) cleanup() {
