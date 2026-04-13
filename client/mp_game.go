@@ -18,12 +18,11 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-const youQuit = "You quit! 🐔"
-
-// TODO: refactor this
-var ErrYouLose error = errors.New("You Lose!")                           // nolint: revive, staticcheck
-var ErrYouWon error = errors.New("You Won!")                             // nolint: revive, staticcheck
-var ErrSadAndAlone error = errors.New("There is no one to play with :(") // nolint: revive, staticcheck
+const (
+	messageYouQuit = "You quit! 🐔"
+	messageYouLost = "You lost!"
+	messageYouWon  = "You won!"
+)
 
 type gameOverMessage struct {
 	msg string
@@ -82,7 +81,7 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if err := m.stream.Send(tetris2Proto(&msg, m.playerName)); err != nil {
 			var message string
 			if errors.Is(err, io.EOF) {
-				message = ErrYouWon.Error()
+				message = messageYouWon
 			} else {
 				message = "error in stream send():\n" + err.Error()
 			}
@@ -131,23 +130,17 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keys.Quit):
-			return m, m.toLobby(youQuit)
-
+			return m, m.toLobby(messageYouQuit)
 		case key.Matches(msg, m.keys.MoveLeft):
 			m.localGame.Do(tetris.MoveLeft())
-
 		case key.Matches(msg, m.keys.MoveRight):
 			m.localGame.Do(tetris.MoveRight())
-
 		case key.Matches(msg, m.keys.MoveDown):
 			m.localGame.Do(tetris.MoveDown())
-
 		case key.Matches(msg, m.keys.DropDown):
 			m.localGame.Do(tetris.DropDown())
-
 		case key.Matches(msg, m.keys.RotateLeft):
 			m.localGame.Do(tetris.RotateLeft())
-
 		case key.Matches(msg, m.keys.RotateRight):
 			m.localGame.Do(tetris.RotateRight())
 		}
@@ -197,7 +190,7 @@ func (m *MPPlayingModel) listenToGameUpdates() tea.Cmd {
 		select {
 		case msg, ok := <-m.localGame.GameMessageCh:
 			if !ok {
-				return gameOverMessage{msg: ErrYouLose.Error()}
+				return gameOverMessage{msg: messageYouLost}
 			}
 			return msg
 		case <-m.ctx.Done():
@@ -212,15 +205,12 @@ func (m *MPPlayingModel) listenToStreamUpdates() tea.Cmd {
 		if err != nil {
 			message := fmt.Sprintf("listening stream: %v", err)
 			if err == io.EOF {
-				return gameOverMessage{msg: ErrYouWon.Error()}
+				return gameOverMessage{msg: messageYouWon}
 			}
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.Canceled { //nolint: gocritic
-				message = ErrYouWon.Error()
-			} else if ok && st.Code() == codes.DeadlineExceeded {
-				message = ErrSadAndAlone.Error()
+				message = messageYouWon
 			}
-
 			return gameOverMessage{msg: message}
 		}
 		return msg

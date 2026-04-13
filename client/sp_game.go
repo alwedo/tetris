@@ -80,22 +80,16 @@ func (m *SingleGameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 					LocalGameState: m.gameState,
 				}
 			}
-
 		case key.Matches(msg, m.keys.MoveLeft):
 			m.game.Do(tetris.MoveLeft())
-
 		case key.Matches(msg, m.keys.MoveRight):
 			m.game.Do(tetris.MoveRight())
-
 		case key.Matches(msg, m.keys.MoveDown):
 			m.game.Do(tetris.MoveDown())
-
 		case key.Matches(msg, m.keys.DropDown):
 			m.game.Do(tetris.DropDown())
-
 		case key.Matches(msg, m.keys.RotateLeft):
 			m.game.Do(tetris.RotateLeft())
-
 		case key.Matches(msg, m.keys.RotateRight):
 			m.game.Do(tetris.RotateRight())
 		}
