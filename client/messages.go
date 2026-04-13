@@ -6,6 +6,13 @@ import (
 	"google.golang.org/grpc"
 )
 
+const (
+	messageYouQuit  = "You quit! 🐔"
+	messageYouLost  = "You lost!"
+	messageYouWon   = "You won!"
+	messageGameOver = "Game Over"
+)
+
 type TransitionToLobbyMsg struct {
 	Message         string
 	LocalGameState  tetris.GameMessage
@@ -32,3 +39,6 @@ type connectionErrorMsg struct {
 type streamErrorMsg struct {
 	err error
 }
+
+type localAnimationMessage struct{}
+type remoteAnimationMessage struct{}

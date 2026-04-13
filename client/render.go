@@ -127,8 +127,8 @@ func renderCenterPanel(local tetris.Tetris, name string, remote *pb.GameMessage)
 		statValues := lipgloss.NewStyle().Render(
 			lipgloss.JoinVertical(
 				lipgloss.Left,
-				lipgloss.NewStyle().Bold(true).Render(strconv.Itoa(local.Level)),
-				lipgloss.NewStyle().Bold(true).Render(strconv.Itoa(local.Lines)),
+				boldStyle.Render(strconv.Itoa(local.Level)),
+				boldStyle.Render(strconv.Itoa(local.Lines)),
 				renderNextPiece(local),
 			),
 		)
@@ -148,7 +148,11 @@ func renderCenterPanel(local tetris.Tetris, name string, remote *pb.GameMessage)
 	if sw > w {
 		w = sw
 	}
-	title := lipgloss.NewStyle().Align(lipgloss.Center).Width(w).Bold(true).PaddingTop(1).Render(gameName)
+	title := boldStyle.
+		Width(w).
+		Align(lipgloss.Center).
+		PaddingTop(1).
+		Render(gameName)
 
 	styleStats := lipgloss.NewStyle().
 		Width(w).

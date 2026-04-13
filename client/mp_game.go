@@ -20,14 +20,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-type localAnimationMessage struct{}
-type remoteAnimationMessage struct{}
-
-const (
-	messageYouQuit = "You quit! 🐔"
-	messageYouLost = "You lost!"
-	messageYouWon  = "You won!"
-)
 
 type gameOverMessage struct {
 	msg string

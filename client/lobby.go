@@ -216,9 +216,9 @@ func (m *LobbyModel) View() tea.View {
 	case m.lobbyState == LobbyStateMenu && m.notification != "":
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
-			lipgloss.Wrap(lipgloss.NewStyle().Bold(true).Render(m.notification), bw-8, " "),
+			lipgloss.Wrap(boldStyle.Render(m.notification), bw-8, " "),
 			"",
-			lipgloss.NewStyle().Faint(true).Render("Press any key to continue"))
+			faintStyle.Render("Press any key to continue"))
 	case m.lobbyState == LobbyStateMenu:
 		overlay = m.renderMenuContent()
 	case m.lobbyState == LobbyStateConnecting:
@@ -226,13 +226,13 @@ func (m *LobbyModel) View() tea.View {
 			lipgloss.Center,
 			m.spinner.View()+" Connecting to server...",
 			"",
-			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"))
+			faintStyle.Render("Press esc to cancel"))
 	case m.lobbyState == LobbyStateWaiting:
 		overlay = lipgloss.JoinVertical(
 			lipgloss.Center,
 			m.spinner.View()+" Waiting for opponent...",
 			"",
-			lipgloss.NewStyle().Faint(true).Render("Press esc to cancel"))
+			faintStyle.Render("Press esc to cancel"))
 	}
 
 	// Wrap overlay with border and background

@@ -13,8 +13,6 @@ import (
 	"github.com/alwedo/tetris"
 )
 
-type animationMessage struct{}
-
 type SingleGameModel struct {
 	game      *tetris.Game
 	gameState tetris.GameMessage
@@ -51,12 +49,12 @@ func (m *SingleGameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		if len(msg.ClearedLines) > 0 {
 			m.animationFrames = 8
 			m.animationLayout = slices.Clone(msg.ClearedLines)
-			return m, func() tea.Msg { return animationMessage{} }
+			return m, func() tea.Msg { return localAnimationMessage{} }
 		}
 
 		return m, m.listenToGameUpdates()
 
-	case animationMessage:
+	case localAnimationMessage:
 		m.animationFrames--
 		if m.animationFrames == 0 {
 			return m, m.listenToGameUpdates()
@@ -117,11 +115,10 @@ func (m *SingleGameModel) listenToGameUpdates() tea.Cmd {
 		select {
 		case msg, ok := <-m.game.GameMessageCh:
 			if !ok {
-				// Channel closed = game over
 				m.cancel()
 				return TransitionToLobbyMsg{
 					LocalGameState: m.gameState,
-					Message:        "Game Over!",
+					Message:        messageGameOver,
 				}
 			}
 			return msg
