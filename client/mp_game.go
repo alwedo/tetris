@@ -25,6 +25,10 @@ var ErrYouLose error = errors.New("You Lose!")                           // noli
 var ErrYouWon error = errors.New("You Won!")                             // nolint: revive, staticcheck
 var ErrSadAndAlone error = errors.New("There is no one to play with :(") // nolint: revive, staticcheck
 
+type gameOverMessage struct {
+	msg string
+}
+
 type MPPlayingModel struct {
 	playerName  string
 	localGame   *tetris.Game
@@ -57,7 +61,7 @@ func NewMPPlayingModel(
 }
 
 func (m *MPPlayingModel) Init() tea.Cmd {
-	ctx, cancel := context.WithCancel(m.ctx)
+	ctx, cancel := context.WithCancel(m.ctx) //nolint: gosec
 	m.ctx = ctx
 	m.cancel = cancel
 
@@ -75,22 +79,14 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.localState = msg
 
 		// Send to opponent
-		sendMsg := tetris2Proto(&msg)
-		sendMsg.SetName(m.playerName)
-		if err := m.stream.Send(sendMsg); err != nil {
-			transition := TransitionToLobbyMsg{
-				LocalGameState:  m.localState,
-				RemoteGameState: m.remoteState,
-			}
+		if err := m.stream.Send(tetris2Proto(&msg, m.playerName)); err != nil {
+			var message string
 			if errors.Is(err, io.EOF) {
-				transition.Message = ErrYouWon.Error()
+				message = ErrYouWon.Error()
 			} else {
-				transition.Message = "error in stream send():\n" + err.Error()
+				message = "error in stream send():\n" + err.Error()
 			}
-			m.cleanup()
-			return m, func() tea.Msg {
-				return transition
-			}
+			return m, m.toLobby(message)
 		}
 
 		if len(msg.ClearedLines) > 0 {
@@ -129,27 +125,13 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.remoteState = msg
 		return m, m.listenToStreamUpdates()
 
-	case streamErrorMsg:
-		m.cleanup()
-		return m, func() tea.Msg {
-			return TransitionToLobbyMsg{
-				LocalGameState:  m.localState,
-				RemoteGameState: m.remoteState,
-				Message:         msg.err.Error(),
-			}
-		}
+	case gameOverMessage:
+		return m, m.toLobby(msg.msg)
 
 	case tea.KeyPressMsg:
 		switch {
 		case key.Matches(msg, m.keys.Quit):
-			m.cleanup()
-			return m, func() tea.Msg {
-				return TransitionToLobbyMsg{
-					LocalGameState:  m.localState,
-					RemoteGameState: m.remoteState,
-					Message:         youQuit,
-				}
-			}
+			return m, m.toLobby(youQuit)
 
 		case key.Matches(msg, m.keys.MoveLeft):
 			m.localGame.Do(tetris.MoveLeft())
@@ -191,15 +173,22 @@ func (m *MPPlayingModel) View() tea.View {
 	).Render())
 }
 
-func (m *MPPlayingModel) cleanup() {
-	if m.cancel != nil {
-		m.cancel()
-	}
-	if m.stream != nil {
-		m.stream.CloseSend() // nolint: errcheck
-	}
-	if m.conn != nil {
-		m.conn.Close()
+func (m *MPPlayingModel) toLobby(msg string) tea.Cmd {
+	return func() tea.Msg {
+		if m.cancel != nil {
+			m.cancel()
+		}
+		if m.stream != nil {
+			m.stream.CloseSend() // nolint: errcheck
+		}
+		if m.conn != nil {
+			m.conn.Close()
+		}
+		return TransitionToLobbyMsg{
+			Message:         msg,
+			LocalGameState:  m.localState,
+			RemoteGameState: m.remoteState,
+		}
 	}
 }
 
@@ -208,12 +197,11 @@ func (m *MPPlayingModel) listenToGameUpdates() tea.Cmd {
 		select {
 		case msg, ok := <-m.localGame.GameMessageCh:
 			if !ok {
-				// Channel closed = game over (you lost)
-				return streamErrorMsg{err: ErrYouLose}
+				return gameOverMessage{msg: ErrYouLose.Error()}
 			}
 			return msg
 		case <-m.ctx.Done():
-			return nil
+			return gameOverMessage{msg: "cancelled"}
 		}
 	}
 }
@@ -222,28 +210,25 @@ func (m *MPPlayingModel) listenToStreamUpdates() tea.Cmd {
 	return func() tea.Msg {
 		msg, err := m.stream.Recv()
 		if err != nil {
+			message := fmt.Sprintf("listening stream: %v", err)
 			if err == io.EOF {
-				// you won
-				return ErrYouWon
-				// return streamErrorMsg{err: fmt.Errorf("listening stream: %w", err)}
+				return gameOverMessage{msg: ErrYouWon.Error()}
 			}
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.Canceled { //nolint: gocritic
-				// you won
-				return nil
+				message = ErrYouWon.Error()
 			} else if ok && st.Code() == codes.DeadlineExceeded {
-				// opponent didnt show up
-				return streamErrorMsg{err: ErrSadAndAlone}
+				message = ErrSadAndAlone.Error()
 			}
 
-			return streamErrorMsg{err: fmt.Errorf("listening stream: %w", err)}
+			return gameOverMessage{msg: message}
 		}
 		return msg
 	}
 }
 
 // tetris2Proto converts local game state to protobuf for sending to opponent
-func tetris2Proto(t *tetris.GameMessage) *pb.GameMessage {
+func tetris2Proto(t *tetris.GameMessage, name string) *pb.GameMessage {
 	rendered := pb.Stack_builder{Rows: make([]*pb.Row, 20)}.Build()
 
 	for i := range rendered.GetRows() {
@@ -272,7 +257,7 @@ func tetris2Proto(t *tetris.GameMessage) *pb.GameMessage {
 	}
 
 	return pb.GameMessage_builder{
-		Name:       new("Player"),
+		Name:       new(name),
 		LinesClear: new(int32(t.Tetris.Lines)), // nolint: gosec
 		Stack:      rendered,
 	}.Build()
