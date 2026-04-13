@@ -86,25 +86,18 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tetris.GameMessage:
 		m.localState = msg
-
-		// Send to opponent
-		if err := m.stream.Send(tetris2Proto(&msg, m.playerName)); err != nil {
-			var message string
-			if errors.Is(err, io.EOF) {
-				message = messageYouWon
-			} else {
-				message = "error in stream send():\n" + err.Error()
-			}
-			return m, m.toLobby(message)
+		cmds := []tea.Cmd{
+			m.sendToOpponent(tetris2Proto(&msg, m.playerName)),
 		}
 
 		if len(msg.ClearedLines) > 0 {
 			m.localAnimationFrames = 8
 			m.localAnimationLayout = slices.Clone(msg.ClearedLines)
-			return m, func() tea.Msg { return localAnimationMessage{} }
+			cmds = append(cmds, func() tea.Msg { return localAnimationMessage{} })
+		} else {
+			cmds = append(cmds, m.listenToGameUpdates())
 		}
-
-		return m, m.listenToGameUpdates()
+		return m, tea.Batch(cmds...)
 
 	case *pb.GameMessage:
 		m.localGame.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
@@ -235,6 +228,19 @@ func (m *MPPlayingModel) listenToStreamUpdates() tea.Cmd {
 		}
 		return msg
 	}
+}
+
+func (m *MPPlayingModel) sendToOpponent(msg *pb.GameMessage) tea.Cmd {
+	if err := m.stream.Send(msg); err != nil {
+		var message string
+		if errors.Is(err, io.EOF) {
+			message = messageYouWon
+		} else {
+			message = "error in stream send():\n" + err.Error()
+		}
+		return m.toLobby(message)
+	}
+	return nil
 }
 
 // tetris2Proto converts local game state to protobuf for sending to opponent
