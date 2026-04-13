@@ -41,4 +41,9 @@ type streamErrorMsg struct {
 }
 
 type localAnimationMessage struct{}
+
 type remoteAnimationMessage struct{}
+
+type gameOverMessage struct {
+	msg string
+}

@@ -40,6 +40,7 @@ func (m *RootModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.lobbyModel.remoteGameState = msg.RemoteGameState
 		m.lobbyModel.notification = msg.Message
 		m.lobbyModel.lobbyState = LobbyStateMenu
+		m.lobbyModel.playerName = m.playerName
 
 		m.currentModel = m.lobbyModel
 		return m, m.currentModel.Init()

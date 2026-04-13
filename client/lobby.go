@@ -36,6 +36,7 @@ type LobbyModel struct {
 	help         help.Model
 
 	localGameState  tetris.GameMessage
+	playerName      string
 	remoteGameState *pb.GameMessage
 
 	lobbyState LobbyState
@@ -85,9 +86,7 @@ func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) { // nolint: gocritic
 	case tea.KeyPressMsg:
 		if m.notification != "" {
-			// if key.Matches(msg, m.keys.Select) {
 			m.notification = ""
-			// }
 			return m, nil
 		}
 
@@ -197,7 +196,6 @@ func (m *LobbyModel) updateWaiting(msg tea.Msg) (tea.Model, tea.Cmd) {
 }
 
 func (m *LobbyModel) View() tea.View {
-	// Base layer: always show game screens
 	var rStack string
 	if m.remoteGameState != nil {
 		rStack = renderRemoteStack(m.remoteGameState)
@@ -205,12 +203,11 @@ func (m *LobbyModel) View() tea.View {
 
 	base := lipgloss.JoinHorizontal(lipgloss.Top,
 		renderStack(m.localGameState.Tetris),
-		renderCenterPanel(m.localGameState.Tetris, "", m.remoteGameState),
+		renderCenterPanel(m.localGameState.Tetris, m.playerName, m.remoteGameState),
 		rStack,
 	)
 	bw, bh := lipgloss.Size(base)
 
-	// Build overlay content based on state
 	var overlay string
 	switch {
 	case m.lobbyState == LobbyStateMenu && m.notification != "":

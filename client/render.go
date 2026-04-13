@@ -158,6 +158,8 @@ func renderCenterPanel(local tetris.Tetris, name string, remote *pb.GameMessage)
 		Width(w).
 		Align(lipgloss.Center).
 		PaddingTop(2).
+		MarginLeft(1).
+		MarginRight(1).
 		Render(lipgloss.JoinVertical(lipgloss.Top, stats))
 
 	return lipgloss.NewStyle().

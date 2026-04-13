@@ -20,11 +20,6 @@ import (
 	"google.golang.org/grpc/status"
 )
 
-
-type gameOverMessage struct {
-	msg string
-}
-
 type MPPlayingModel struct {
 	playerName  string
 	localGame   *tetris.Game
