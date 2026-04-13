@@ -2,6 +2,8 @@ package client
 
 import (
 	"context"
+	"slices"
+	"strings"
 	"time"
 
 	"charm.land/bubbles/v2/help"
@@ -11,6 +13,8 @@ import (
 	"github.com/alwedo/tetris"
 )
 
+type animationMessage struct{}
+
 type SingleGameModel struct {
 	game      *tetris.Game
 	gameState tetris.GameMessage
@@ -18,6 +22,9 @@ type SingleGameModel struct {
 	cancel    context.CancelFunc
 	keys      gameKeyMap
 	help      help.Model
+
+	animationFrames int
+	animationLayout []int
 }
 
 func NewSingleGameModel() *SingleGameModel {
@@ -42,31 +49,18 @@ func (m *SingleGameModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.gameState = msg
 
 		if len(msg.ClearedLines) > 0 {
-			complete := make(map[int][]tetris.Shape)
-			for _, v := range msg.ClearedLines {
-				complete[v] = msg.Tetris.Stack[v]
-			}
-			return m, newAnimationMsg(complete)
+			m.animationFrames = 8
+			m.animationLayout = slices.Clone(msg.ClearedLines)
+			return m, func() tea.Msg { return animationMessage{} }
 		}
 
 		return m, m.listenToGameUpdates()
 
-	case AnimationMessage:
-		if msg.frames == 0 {
+	case animationMessage:
+		m.animationFrames--
+		if m.animationFrames == 0 {
 			return m, m.listenToGameUpdates()
 		}
-		// Skip rendering the tetromino during animation
-		if m.gameState.Tetris.Tetromino != nil {
-			m.gameState.Tetris.Tetromino = nil
-		}
-		for k, v := range msg.completedRows {
-			if msg.frames%2 == 0 {
-				m.gameState.Tetris.Stack[k] = make([]tetris.Shape, 10)
-			} else {
-				m.gameState.Tetris.Stack[k] = v
-			}
-		}
-		msg.frames--
 		return m, tea.Tick(40*time.Millisecond, func(time.Time) tea.Msg {
 			return msg
 		})
@@ -104,14 +98,18 @@ func (m *SingleGameModel) View() tea.View {
 		renderStack(m.gameState.Tetris),
 		renderCenterPanel(m.gameState.Tetris, "", nil),
 	)
+	c := lipgloss.NewCompositor(lipgloss.NewLayer(center))
+
+	if m.animationFrames > 0 && m.animationFrames%2 == 0 {
+		for _, i := range m.animationLayout {
+			c.AddLayers(lipgloss.NewLayer(strings.Repeat(" ", 20)).X(1).Y(20 - i))
+		}
+	}
 
 	cw, ch := lipgloss.Size(center)
-	help := helpStyle.Width(cw).Render(m.help.View(m.keys))
+	c.AddLayers(lipgloss.NewLayer(helpStyle.Width(cw).Render(m.help.View(m.keys))).Y(ch))
 
-	return tea.NewView(lipgloss.NewCompositor(
-		lipgloss.NewLayer(center),
-		lipgloss.NewLayer(help).Y(ch),
-	).Render())
+	return tea.NewView(c.Render())
 }
 
 func (m *SingleGameModel) listenToGameUpdates() tea.Cmd {
