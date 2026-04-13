@@ -2,6 +2,7 @@ package client
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -84,9 +85,9 @@ func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) { // nolint: gocritic
 	case tea.KeyPressMsg:
 		if m.notification != "" {
-			if key.Matches(msg, m.keys.Select) {
-				m.notification = ""
-			}
+			// if key.Matches(msg, m.keys.Select) {
+			m.notification = ""
+			// }
 			return m, nil
 		}
 
@@ -99,8 +100,6 @@ func (m *LobbyModel) updateMenu(msg tea.Msg) (tea.Model, tea.Cmd) {
 			if m.selectedMode < len(m.gameModes)-1 {
 				m.selectedMode++
 			}
-		case key.Matches(msg, m.keys.Help):
-			m.help.ShowAll = !m.help.ShowAll
 		case key.Matches(msg, m.keys.Select):
 			if m.selectedMode == 0 {
 				return m, func() tea.Msg {
@@ -208,8 +207,7 @@ func (m *LobbyModel) View() tea.View {
 		m.renderMenuPanel(),
 		rStack,
 	)
-	bw := lipgloss.Width(base)
-	bh := lipgloss.Height(base)
+	bw, bh := lipgloss.Size(base)
 
 	var overlay string
 	switch {
@@ -242,8 +240,7 @@ func (m *LobbyModel) View() tea.View {
 			Render(overlay)
 	}
 
-	nw := lipgloss.Width(overlay)
-	nh := lipgloss.Height(overlay)
+	nw, nh := lipgloss.Size(overlay)
 	help := helpStyle.Width(bw).Render(m.help.View(m.keys))
 
 	mainscreen := lipgloss.NewCompositor(
@@ -270,7 +267,7 @@ func (m *LobbyModel) renderMenuPanel() string {
 		Align(lipgloss.Center).
 		Border(lipgloss.RoundedBorder()).
 		Render(lipgloss.JoinVertical(lipgloss.Center,
-			lipgloss.NewStyle().Bold(true).Render(appName),
+			lipgloss.NewStyle().Bold(true).Render(gameName),
 			"\n",
 			menu.String(),
 		))
@@ -317,7 +314,7 @@ func (m *LobbyModel) waitForOpponent() tea.Cmd {
 		if err != nil {
 			st, ok := status.FromError(err)
 			if ok && st.Code() == codes.DeadlineExceeded { //nolint: gocritic
-				return streamErrorMsg{err: ErrSadAndAlone}
+				return streamErrorMsg{err: errors.New("There is no one to play with :(")} //nolint: staticcheck
 			}
 			return streamErrorMsg{err: fmt.Errorf("connection lost: %w", err)}
 		}
