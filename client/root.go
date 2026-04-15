@@ -14,7 +14,7 @@ type RootModel struct {
 }
 
 func NewRootModel(ctx context.Context, pn string) *RootModel {
-	lobby := NewLobbyModel(ctx)
+	lobby := NewLobbyModel(ctx, pn)
 	return &RootModel{
 		currentModel: lobby,
 		lobbyModel:   lobby,

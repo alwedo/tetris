@@ -50,10 +50,11 @@ type LobbyModel struct {
 	stream    grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
 }
 
-func NewLobbyModel(ctx context.Context) *LobbyModel {
+func NewLobbyModel(ctx context.Context, playerName string) *LobbyModel {
 	return &LobbyModel{
 		selectedMode: 0,
 		gameModes:    []string{"Single Player", "Multiplayer"},
+		playerName:   playerName,
 		keys:         lobbyKeys,
 		help:         help.New(),
 		lobbyState:   LobbyStateMenu,
@@ -133,7 +134,7 @@ func (m *LobbyModel) updateConnecting(msg tea.Msg) (tea.Model, tea.Cmd) {
 		m.conn = msg.conn
 		m.stream = msg.stream
 		m.lobbyState = LobbyStateWaiting
-		if err := m.stream.Send(pb.GameMessage_builder{Name: new("Player")}.Build()); err != nil {
+		if err := m.stream.Send(pb.GameMessage_builder{Name: new(m.playerName)}.Build()); err != nil {
 			return m, func() tea.Msg {
 				return connectionErrorMsg{
 					err: fmt.Errorf("sending first message: %w", err),
