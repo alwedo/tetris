@@ -73,18 +73,22 @@ func (m *MPPlayingModel) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	switch msg := msg.(type) {
 	case tetris.GameMessage:
 		m.localState = msg
-		cmds := []tea.Cmd{
-			m.sendToOpponent(tetris2Proto(&msg, m.playerName)),
+
+		// Try to send to opponent first - if error, abort immediately
+		sendCmd := m.sendToOpponent(tetris2Proto(&msg, m.playerName))
+		if sendCmd != nil {
+			// Error sending (opponent disconnected) - don't continue game
+			return m, sendCmd
 		}
 
+		// Successfully sent, continue with animation or listening
 		if len(msg.ClearedLines) > 0 {
 			m.localAnimationFrames = 8
 			m.localAnimationLayout = slices.Clone(msg.ClearedLines)
-			cmds = append(cmds, func() tea.Msg { return localAnimationMessage{} })
-		} else {
-			cmds = append(cmds, m.listenToGameUpdates())
+			return m, func() tea.Msg { return localAnimationMessage{} }
 		}
-		return m, tea.Batch(cmds...)
+
+		return m, m.listenToGameUpdates()
 
 	case *pb.GameMessage:
 		m.localGame.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
