@@ -60,7 +60,7 @@ func main() {
 		hostKeyOption,
 		wish.WithMiddleware(
 			wishbubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
-				return client.NewRootModel(sess.Context(), sess.User()), []tea.ProgramOption{tea.WithFPS(25)}
+				return client.NewModel(sess.Context(), sess.User()), []tea.ProgramOption{tea.WithFPS(25)}
 			}),
 			activeterm.Middleware(),
 		),
