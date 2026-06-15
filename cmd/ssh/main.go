@@ -46,18 +46,15 @@ func main() {
 		}
 	}()
 
-	// Configure host key: prefer SSH_HOST_KEY_PEM env var, fall back to file path
-	var hostKeyOption ssh.Option
 	pem := os.Getenv("SSH_HOST_KEY_PEM")
 	if pem == "" {
-		panic("SSH_HOST_KEY_PEM env var not found or empty")
+		log.Fatal("SSH_HOST_KEY_PEM env var not found or empty")
 	}
-	hostKeyOption = wish.WithHostKeyPEM([]byte(pem))
 
 	// Start the wish SSH server
 	sshServer, err := wish.NewServer(
 		wish.WithAddress(":"+*sshPort),
-		hostKeyOption,
+		wish.WithHostKeyPEM([]byte(pem)),
 		wish.WithMiddleware(
 			wishbubbletea.Middleware(func(sess ssh.Session) (tea.Model, []tea.ProgramOption) {
 				return client.NewRootModel(sess.Context(), sess.User()), []tea.ProgramOption{tea.WithFPS(25)}
