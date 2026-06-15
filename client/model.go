@@ -57,14 +57,14 @@ type Model struct {
 	stream  grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
 
 	// Game state (shared by both SP and MP)
-	game            *tetris.Game
-	localState      tetris.GameMessage
-	remoteState     *pb.GameMessage
-	localAnimating  bool
-	localAnimFrame  int
-	localAnimLayout []int
-	remoteAnimating bool
-	remoteAnimFrame int
+	game             *tetris.Game
+	localState       tetris.GameMessage
+	remoteState      *pb.GameMessage
+	localAnimating   bool
+	localAnimFrame   int
+	localAnimLayout  []int
+	remoteAnimating  bool
+	remoteAnimFrame  int
 	remoteAnimLayout []int32
 
 	// Context management
@@ -367,7 +367,9 @@ func (m *Model) updateMultiplayer(msg tea.Msg) (tea.Model, tea.Cmd) {
 		return m, m.listenToGameUpdates()
 
 	case *pb.GameMessage:
-		m.game.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
+		if msg.GetLinesClear() > 0 {
+			m.game.Do(tetris.AddRemoteLines(int(msg.GetLinesClear())))
+		}
 		m.remoteState = msg
 
 		if len(msg.GetClearedRowsIndexes().GetCells()) > 0 {
