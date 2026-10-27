@@ -11,10 +11,10 @@ import (
 	"syscall"
 
 	tea "charm.land/bubbletea/v2"
+	"charm.land/ssh"
 	"charm.land/wish/v2"
 	"charm.land/wish/v2/activeterm"
 	wishbubbletea "charm.land/wish/v2/bubbletea"
-	"github.com/charmbracelet/ssh"
 
 	"github.com/alwedo/tetris/client"
 	"github.com/alwedo/tetris/pb"
