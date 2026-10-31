@@ -1,7 +1,7 @@
 services:
   cloudflared:
     image: cloudflare/cloudflared:latest
-    container_name: cloudflared
+    container_name: tetris-cloudflared
     command:
       - tunnel
       - --no-autoupdate
