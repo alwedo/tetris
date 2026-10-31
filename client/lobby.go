@@ -10,7 +10,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/alwedo/tetris"
+	tetris "github.com/alwedo/tetris/engine"
 	"github.com/alwedo/tetris/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
