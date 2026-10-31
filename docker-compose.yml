@@ -1,10 +1,15 @@
 services:
-  tetris-ssh:
+  tetris:
     image: tetris-ssh
     build: .
     ports:
-      - "2222:22"
+      - "2222:2222"
       - "9000:9000"
+      - "8080:8080"
     environment:
-      - SSH_HOST_KEY_PEM=${SSH_HOST_KEY_PEM}
+      SSH_HOST_KEY_PEM: ${SSH_HOST_KEY_PEM:?SSH_HOST_KEY_PEM must be set}
     restart: unless-stopped
+
+networks:
+  tetris-network:
+    driver: bridge
