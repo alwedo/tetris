@@ -15,8 +15,8 @@ type RootModel struct {
 	ctx          context.Context
 }
 
-func NewRootModel(ctx context.Context, pn string) *RootModel {
-	lobby := NewLobbyModel(ctx)
+func NewRootModel(ctx context.Context, pn, serverAddress string) *RootModel {
+	lobby := NewLobbyModel(ctx, serverAddress)
 	return &RootModel{
 		currentModel: lobby,
 		lobbyModel:   lobby,
