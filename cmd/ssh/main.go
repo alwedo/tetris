@@ -58,7 +58,7 @@ func run() error {
 		return fmt.Errorf("failed to listen on %s: %w", grpcPort, err)
 	}
 	defer func() {
-		if err := lis.Close(); err != nil {
+		if err := lis.Close(); err != nil && !errors.Is(err, net.ErrClosed) {
 			log.Printf("error closing the listener: %v", err)
 		}
 	}()
