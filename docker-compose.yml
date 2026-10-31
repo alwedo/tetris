@@ -1,6 +1,6 @@
 services:
   tetris:
-    image: tetris-ssh
+    container_name: ssh-server
     build: .
     ports:
       - "2222:2222"
