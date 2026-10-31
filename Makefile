@@ -9,17 +9,17 @@ test:
 lint:
 	@golangci-lint run
 
-.PHONY: run-tetris
-run-tetris: mod
+.PHONY: run
+run: mod
 	@go run cmd/client/main.go
 
 .PHONY: ssh
-deploy-ssh:
+ssh:
 	@docker compose down || true
 	@docker compose -f docker-compose.yml up -d --build
 
 .PHONY: ssh-cf
-deploy-ssh:
+ssh-cf:
 	@docker compose down || true
 	@docker compose -f docker-compose.yml -f docker-compose-cloudflare.yml up -d --build
 
