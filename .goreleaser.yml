@@ -2,12 +2,12 @@ version: 2
 
 before:
   hooks:
-    - go mod download
+    - go mod tidy
 
 builds:
-  - id: build
-    main: ./cmd/{{ .Env.COMPONENT }}
-    binary: "{{ .Env.BINARY_NAME }}"
+  - id: tetris
+    main: ./cmd/client
+    binary: tetris
     env:
       - CGO_ENABLED=0
     goos:
@@ -18,13 +18,15 @@ builds:
       - amd64
       - arm64
     ldflags:
-      - -s -w
-      - -X main.version={{ .Env.VERSION }}
+      - -s -w -X "main.version={{ .Version }} {{ .Os }}/{{ .Arch }}"
 
 archives:
   - id: archive
-    name_template: >-
-      {{ .Env.BINARY_NAME }}-{{ .Env.VERSION }}-{{.Os}}-{{.Arch}}
+    format: tar.gz
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    format_overrides:
+      - goos: windows
+        format: zip
     files:
       - LICENSE*
       - README*
@@ -34,11 +36,17 @@ checksum:
   name_template: 'checksums.txt'
 
 changelog:
-  use: github-native
+  disable: true
 
-release:
-  github:
-    owner: alwedo
-    name: tetris
-  name_template: "Tetris {{ title .Env.COMPONENT }} {{ .Env.VERSION }}"
-  prerelease: auto
+brews:
+  - repository:
+      owner: alwedo
+      name: homebrew-tap
+      token: "{{ .Env.GITHUB_TOKEN }}"
+    directory: Formula
+    homepage: https://github.com/alwedo/tetris
+    description: "Play Tetris in your terminal"
+    install: |
+      bin.install "tetris"
+    test: |
+      system "#{bin}/tetris", "--version"

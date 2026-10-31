@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"charm.land/lipgloss/v2"
-	"github.com/alwedo/tetris"
+	tetris "github.com/alwedo/tetris/engine"
 	"github.com/alwedo/tetris/pb"
 )
 

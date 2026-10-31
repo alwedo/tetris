@@ -1,102 +1,46 @@
 name: Release
 
 on:
-    push:
-        tags:
-            - 'client/v*'
-            - 'server/v*'
+  push:
+    branches:
+      - main
 
 permissions:
-    contents: write
+  contents: write
+  issues: write
+  pull-requests: write
 
 jobs:
-    detect-tags:
-        runs-on: ubuntu-latest
-        outputs:
-            matrix: ${{ steps.set-matrix.outputs.matrix }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
+  release-please:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create or update release PR
+        id: release
+        uses: googleapis/release-please-action@v5
+        with:
+          config-file: release-please-config.json
+          manifest-file: .release-please-manifest.json
 
-            - name: Detect component from tag
-              id: set-matrix
-              run: |
-                  TAG_REF="${{ github.ref }}"
-                  TAG_NAME="${TAG_REF#refs/tags/}"
-                  echo "Triggered by tag: $TAG_NAME"
+      - name: Checkout release tag
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ steps.release.outputs.tag_name }}
+          fetch-depth: 0
 
-                  if [[ "$TAG_NAME" =~ ^client/v(.+)$ ]]; then
-                    COMPONENT="client"
-                    BINARY_NAME="tetris"
-                    VERSION="${BASH_REMATCH[1]}"
-                  elif [[ "$TAG_NAME" =~ ^server/v(.+)$ ]]; then
-                    COMPONENT="server"
-                    BINARY_NAME="tetris-server"
-                    VERSION="${BASH_REMATCH[1]}"
-                  else
-                    echo "Tag does not match client/v* or server/v* pattern"
-                    exit 1
-                  fi
+      - name: Set up Go
+        if: ${{ steps.release.outputs.release_created }}
+        uses: actions/setup-go@v7
+        with:
+          go-version-file: go.mod
 
-                  echo "Component: $COMPONENT, Version: v$VERSION, Full tag: $TAG_NAME"
-                  MATRIX_INCLUDE=$(jq -nc --arg component "$COMPONENT" --arg binary "$BINARY_NAME" --arg version "v$VERSION" --arg tag "$TAG_NAME" \
-                    '[{"component": $component, "binary_name": $binary, "version": $version, "tag": $tag}]')
-                  echo "matrix={\"include\":$MATRIX_INCLUDE}" >> $GITHUB_OUTPUT
-
-    release:
-        needs: detect-tags
-        runs-on: ubuntu-latest
-        strategy:
-            matrix: ${{ fromJson(needs.detect-tags.outputs.matrix) }}
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-              with:
-                  fetch-depth: 0
-
-            - name: Set up Go
-              uses: actions/setup-go@v6
-              with:
-                  go-version: stable
-
-            - name: Run GoReleaser for ${{ matrix.component }}
-              uses: goreleaser/goreleaser-action@v6
-              with:
-                  distribution: goreleaser
-                  version: latest
-                  args: release --clean --skip=validate
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-                  GORELEASER_CURRENT_TAG: ${{ matrix.tag }}
-                  COMPONENT: ${{ matrix.component }}
-                  BINARY_NAME: ${{ matrix.binary_name }}
-                  VERSION: ${{ matrix.version }}
-
-    build-ssh-docker:
-        needs: detect-tags
-        runs-on: ubuntu-latest
-        steps:
-            - name: Checkout
-              uses: actions/checkout@v6
-
-            - name: Set up Docker Buildx
-              uses: docker/setup-buildx-action@v4
-
-            - name: Login to Scaleway Container Registry
-              uses: docker/login-action@v4
-              with:
-                  registry: rg.nl-ams.scw.cloud/tetris-ssh
-                  username: nologin
-                  password: ${{ secrets.SCW_SECRET_KEY }}
-
-            - name: Build and push SSH server image
-              uses: docker/build-push-action@v7
-              with:
-                  context: .
-                  platforms: linux/amd64
-                  push: true
-                  tags: |
-                      rg.nl-ams.scw.cloud/tetris-ssh/tetris-ssh:latest
-                      rg.nl-ams.scw.cloud/tetris-ssh/tetris-ssh:${{ github.sha }}
+      - name: Run GoReleaser
+        if: ${{ steps.release.outputs.release_created }}
+        uses: goreleaser/goreleaser-action@v7
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean --skip=validate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GORELEASER_TOKEN }}
+          GORELEASER_CURRENT_TAG: ${{ steps.release.outputs.tag_name }}

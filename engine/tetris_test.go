@@ -9,7 +9,7 @@ import (
 	"testing/synctest"
 	"time"
 
-	"github.com/alwedo/tetris/tetristest"
+	"github.com/alwedo/tetris/engine/tetristest"
 )
 
 func TestStart(t *testing.T) {

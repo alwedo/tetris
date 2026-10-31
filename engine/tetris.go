@@ -19,7 +19,7 @@
 //	"context"
 //	"fmt"
 //
-//	"github.com/alwedo/tetris"
+//	"github.com/alwedo/tetris/engine"
 //
 // )
 //
@@ -105,7 +105,7 @@ type GameMessage struct {
 }
 
 // Game interfaces between the caller and the Tetris state by managing
-// automatic down ticks, state transformation and  game stages.
+// automatic down ticks, state transformation and game stages.
 type Game struct {
 	// GameMessageCh will receive a GameMessage every
 	// time the status changes by an action.
@@ -306,7 +306,7 @@ func RotateRight() Command {
 	}
 }
 
-// AddRemoteLines will increase the number of remote lines by i.
+// AddRemoteLines will increase the number of remote lines to i.
 func AddRemoteLines(i int) Command {
 	return func(g *Game) bool {
 		g.remoteLines = i
@@ -546,8 +546,8 @@ func (t *Tetris) setTetromino() bool {
 func (t *Tetris) finishRound(lines []int) bool {
 	if len(lines) > 0 {
 		// remove complete lines in reverse order to avoid index shift issues.
-		for i := len(lines) - 1; i >= 0; i-- {
-			t.Stack = slices.Delete(t.Stack, lines[i], lines[i]+1)
+		for _, line := range slices.Backward(lines) {
+			t.Stack = slices.Delete(t.Stack, line, line+1)
 			t.Stack = append(t.Stack, make([]Shape, 10))
 		}
 		t.Lines += len(lines)

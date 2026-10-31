@@ -10,7 +10,7 @@ import (
 	"charm.land/bubbles/v2/spinner"
 	tea "charm.land/bubbletea/v2"
 	"charm.land/lipgloss/v2"
-	"github.com/alwedo/tetris"
+	tetris "github.com/alwedo/tetris/engine"
 	"github.com/alwedo/tetris/pb"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -27,6 +27,8 @@ const (
 )
 
 type LobbyModel struct {
+	serverAddress string
+
 	// UI state
 	selectedMode int
 	gameModes    []string
@@ -48,14 +50,15 @@ type LobbyModel struct {
 	stream    grpc.BidiStreamingClient[pb.GameMessage, pb.GameMessage]
 }
 
-func NewLobbyModel(ctx context.Context) *LobbyModel {
+func NewLobbyModel(ctx context.Context, serverAddress string) *LobbyModel {
 	return &LobbyModel{
-		selectedMode: 0,
-		gameModes:    []string{"Single Player", "Multiplayer"},
-		keys:         lobbyKeys,
-		help:         help.New(),
-		lobbyState:   LobbyStateMenu,
-		parentCtx:    ctx,
+		serverAddress: serverAddress,
+		selectedMode:  0,
+		gameModes:     []string{"Single Player", "Multiplayer"},
+		keys:          lobbyKeys,
+		help:          help.New(),
+		lobbyState:    LobbyStateMenu,
+		parentCtx:     ctx,
 		spinner: spinner.New(
 			spinner.WithSpinner(spinner.Points),
 			spinner.WithStyle(lipgloss.NewStyle().Foreground(lipgloss.Color("205"))),
@@ -307,8 +310,7 @@ func (m *LobbyModel) cleanup() {
 
 func (m *LobbyModel) connectToServer() tea.Cmd {
 	return func() tea.Msg {
-		// TODO: pass server addr and port as env vars
-		conn, err := grpc.NewClient("127.0.0.1:9000",
+		conn, err := grpc.NewClient(m.serverAddress,
 			// TODO: change insecure creds
 			grpc.WithTransportCredentials(insecure.NewCredentials()))
 		if err != nil {
